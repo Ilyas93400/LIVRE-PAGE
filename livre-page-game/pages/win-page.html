@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>L'appartement en feu - Vous avez gagné</title>
+    <link rel="stylesheet" href="../shared.css">
+    <style>
+        body {
+            background: #000;
+            height: auto;
+            min-height: 100vh;
+            width: 100%;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        /* ============ BURGERS QUI PLUVENT ============ */
+        #burgerRain {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        .burger {
+            position: absolute;
+            top: -18vh;
+            font-size: 90px;
+            animation: chute linear infinite;
+            filter: drop-shadow(0 6px 10px rgba(0,0,0,0.6));
+        }
+
+        @keyframes chute {
+            0%   { transform: translateY(-20vh) rotate(0deg); }
+            100% { transform: translateY(125vh) rotate(720deg); }
+        }
+
+        /* ============ TITRE ============ */
+        .site-header {
+            position: relative;
+            z-index: 5;
+            text-align: center;
+            padding: 18px 10px 6px;
+            font-size: 46px;
+            color: #ffffff;
+            letter-spacing: 3px;
+            text-shadow: 3px 3px 0 #7d0018, 6px 6px 0 rgba(255, 90, 0, 0.55);
+            animation: pulseTitre 1.6s ease-in-out infinite;
+        }
+
+        @keyframes pulseTitre {
+            0%, 100% { transform: scale(1); }
+            50%      { transform: scale(1.05); }
+        }
+
+        /* ============ LES DEUX BOÎTES NOIRES ============ */
+        .content-container {
+            position: relative;
+            z-index: 5;
+            display: flex;
+            justify-content: center;
+            align-items: stretch;
+            gap: 26px;
+            padding: 18px 26px 6px;
+        }
+
+        .story-box {
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 22px;
+            padding: 28px;
+            min-height: 380px;
+            flex: 1;
+            max-width: 640px;
+        }
+
+        .image-placeholder {
+            width: 100%;
+            height: 100%;
+            min-height: 324px;
+            background: rgba(255,255,255,0.08);
+            border: 4px dashed rgba(255,255,255,0.55);
+            border-radius: 16px;
+            display: flex;
+            align-items: stretch;
+            justify-content: stretch;
+            overflow: hidden;
+            padding: 0;
+            color: rgba(255,255,255,0.75);
+            font-size: 24px;
+            text-align: center;
+        }
+
+        /* L'image remplit tout le cadre, sans déformation */
+        .image-placeholder img {
+            width: 100%;
+            height: 100%;
+            min-height: 324px;
+            border-radius: 12px;
+            object-fit: cover;
+            object-position: center;
+            display: block;
+        }
+
+        .right-box-content {
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .right-box-content h2 {
+            font-size: 34px;
+            margin: 0;
+            color: #FFD700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
+            border-bottom: 3px solid rgba(255,255,255,0.25);
+            padding-bottom: 10px;
+        }
+
+        .right-box-content p {
+            font-family: 'Comic Neue', 'Comic Sans MS', cursive;
+            font-size: 21px;
+            line-height: 1.7;
+            margin: 0;
+        }
+
+        /* ============ BOUTON VERT "VOUS AVEZ GAGNÉ" ============ */
+        .win-btn {
+            position: relative;
+            z-index: 5;
+            display: block;
+            margin: 30px auto 70px;
+            font-family: 'Bangers', cursive;
+            font-size: clamp(26px, 4vw, 40px);
+            letter-spacing: 3px;
+            color: #ffffff;
+            background: #1faa3a;
+            border: 5px solid #0d6b22;
+            border-radius: 24px;
+            padding: 22px 60px;
+            text-shadow: 3px 3px 0 rgba(0,0,0,0.45);
+            box-shadow: 0 9px 0 #0d6b22, 0 0 34px rgba(31, 170, 58, 0.6);
+            cursor: pointer;
+            animation: battement 0.9s ease-in-out infinite;
+        }
+
+        .win-btn:hover {
+            background: #2ecb52;
+            animation: battementRapide 0.55s ease-in-out infinite;
+        }
+
+        @keyframes battement {
+            0%, 100% { transform: scale(1); }
+            12%       { transform: scale(1.09); }
+            24%       { transform: scale(1); }
+            36%       { transform: scale(1.06); }
+            48%       { transform: scale(1); }
+        }
+
+        @keyframes battementRapide {
+            0%, 100% { transform: scale(1.04); }
+            50%      { transform: scale(1.12); }
+        }
+
+        /* ============ POPUP WARNING ============ */
+        #overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.65);
+            z-index: 50;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        #overlay.visible { display: flex; }
+
+        .popup {
+            position: relative;
+            width: min(620px, 92vw);
+            background: #1a1a1a;
+            border: 6px solid #ff2b2b;
+            border-radius: 26px;
+            padding: 30px 30px 34px;
+            text-align: center;
+            /* départ : sous l'écran */
+            transform: translateY(130vh) scale(0.85);
+            opacity: 0;
+            box-shadow: 0 0 46px rgba(255, 43, 43, 0.55);
+        }
+
+        /* arrivée : plein écran-centré */
+        #overlay.visible .popup {
+            animation: montePopup 0.65s cubic-bezier(0.18, 1.25, 0.35, 1) forwards;
+        }
+
+        @keyframes montePopup {
+            0% {
+                transform: translateY(130vh) scale(0.85);
+                opacity: 0;
+            }
+            55% {
+                transform: translateY(-22px) scale(1.06);
+                opacity: 1;
+            }
+            78% {
+                transform: translateY(10px) scale(0.98);
+            }
+            100% {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+        }
+
+        .popup h3 {
+            font-family: 'Bangers', cursive;
+            font-size: clamp(40px, 7vw, 68px);
+            color: #ff2b2b;
+            letter-spacing: 4px;
+            margin: 0 0 18px;
+            text-shadow: 3px 3px 0 #000;
+        }
+
+        .popup .close-x {
+            position: absolute;
+            top: -22px;
+            right: -22px;
+            width: 62px;
+            height: 62px;
+            border-radius: 50%;
+            background: #ff2b2b;
+            border: 5px solid #8b0000;
+            color: #ffffff;
+            font-family: 'Bangers', cursive;
+            font-size: 36px;
+            line-height: 1;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #8b0000;
+            transition: transform 0.2s;
+        }
+        .popup .close-x:hover {
+            transform: scale(1.12) rotate(90deg);
+            background: #ff5a5a;
+        }
+
+        .popup p {
+            font-family: 'Comic Neue', 'Comic Sans MS', cursive;
+            font-size: 21px;
+            line-height: 1.6;
+            color: #ffffff;
+            margin: 0 0 26px;
+        }
+
+        .popup .restart-btn {
+            font-family: 'Bangers', cursive;
+            font-size: clamp(26px, 4vw, 36px);
+            letter-spacing: 3px;
+            color: #ffffff;
+            background: #d21f1f;
+            border: 5px solid #7d0000;
+            border-radius: 18px;
+            padding: 16px 52px;
+            cursor: pointer;
+            text-shadow: 3px 3px 0 rgba(0,0,0,0.45);
+            box-shadow: 0 8px 0 #7d0000, 0 0 26px rgba(210, 31, 31, 0.6);
+            transition: all 0.2s;
+        }
+        .popup .restart-btn:hover {
+            background: #ff3535;
+            transform: translateY(-3px);
+            box-shadow: 0 11px 0 #7d0000, 0 0 36px rgba(255, 53, 53, 0.8);
+        }
+
+        /* ============ FONDU DE SORTIE ============ */
+        #fondu {
+            position: fixed;
+            inset: 0;
+            background: #000;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.7s ease;
+        }
+        #fondu.noir { opacity: 1; }
+
+        @media (max-width: 900px) {
+            .content-container { flex-direction: column; align-items: center; }
+            .story-box { max-width: 640px; width: 100%; min-height: auto; }
+            .site-header { font-size: 30px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Burgers qui tombent du ciel -->
+    <div id="burgerRain"></div>
+
+    <!-- Titre du jeu -->
+    <header class="site-header">L'appartement en feu</header>
+
+    <!-- Les deux boîtes noires transparentes -->
+    <main class="content-container">
+
+        <!-- Boîte gauche : emplacement image -->
+        <section class="story-box">
+            <div class="image-placeholder">
+                <img src="../images/krabby-patty.jpeg" alt="Krabby Patty">
+            </div>
+        </section>
+
+        <!-- Boîte droite : titre + scénario -->
+        <section class="story-box">
+            <div class="right-box-content">
+                <h2>Appartement en feu</h2>
+                <p>Vous avez trouvé un travail et vous avez acheté un repas à manger.</p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Bouton de victoire -->
+    <button class="win-btn" id="winBtn">VOUS AVEZ GAGNÉ</button>
+
+    <!-- Popup WARNING -->
+    <div id="overlay">
+        <div class="popup">
+            <button class="close-x" id="closeX" aria-label="Fermer">X</button>
+            <h3>WARNING!</h3>
+            <p>Si vous cliquez sur le bouton en bas de ce texte, vous allez recommencer. Pour ne pas recommencer, cliquez sur le X à l'angle de cette fenêtre.</p>
+            <button class="restart-btn" id="restartBtn">RECOMMENCER</button>
+        </div>
+    </div>
+
+    <div id="fondu"></div>
+
+    <script>
+        /* ============ BURGERS QUI PLUVENT ============ */
+        function creerBurgers() {
+            const conteneur = document.getElementById('burgerRain');
+            const types = ['🍔', '🍔', '🍔', '🌭', '🍕', '🥪', '🌮', '🍗'];
+
+            for (let i = 0; i < 18; i++) {
+                const burger = document.createElement('span');
+                burger.className = 'burger';
+                burger.textContent = types[Math.floor(Math.random() * types.length)];
+                burger.style.left = Math.random() * 100 + 'vw';
+                burger.style.fontSize = (55 + Math.random() * 85).toFixed(0) + 'px';
+                burger.style.animationDuration = (6 + Math.random() * 7).toFixed(2) + 's';
+                burger.style.animationDelay = (-Math.random() * 12).toFixed(2) + 's';
+                burger.style.opacity = (0.55 + Math.random() * 0.4).toFixed(2);
+                conteneur.appendChild(burger);
+            }
+        }
+
+        window.addEventListener('load', creerBurgers);
+
+        /* ============ POPUP WARNING ============ */
+        const overlay = document.getElementById('overlay');
+        const fondu   = document.getElementById('fondu');
+
+        document.getElementById('winBtn').addEventListener('click', function () {
+            overlay.classList.add('visible');
+        });
+
+        document.getElementById('closeX').addEventListener('click', function () {
+            overlay.classList.remove('visible');
+        });
+
+        document.getElementById('restartBtn').addEventListener('click', function () {
+            overlay.classList.remove('visible');
+            fondu.classList.add('noir');
+            setTimeout(function () {
+                window.location.href = '../index.html';
+            }, 800);
+        });
+    </script>
+
+</body>
+</html>

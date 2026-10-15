@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>L'appartement en feu</title>
+    <link rel="stylesheet" href="shared.css">
+    <style>
+        body {
+            background: #000;
+            overflow: hidden;
+        }
+
+        /* ---------- Contenu de la page de départ ---------- */
+        .start-container {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            text-align: center;
+            padding: 0 20px;
+        }
+
+        .game-title {
+            font-family: 'Bangers', cursive;
+            font-size: clamp(46px, 9vw, 96px);
+            letter-spacing: 5px;
+            color: #ffffff;
+            margin-bottom: 55px;
+            text-shadow:
+                0 0 8px  #FF4500,
+                0 0 18px #FF4500,
+                0 0 36px #FF6347,
+                0 0 70px #FF0000,
+                4px 5px 0 rgba(139, 0, 0, 0.85);
+            animation: flicker 0.45s infinite alternate;
+        }
+
+        /* Petite flamme cartoone qui léchonne le titre */
+        .game-title .flame-letter {
+            position: relative;
+            display: inline-block;
+            color: #ffffff;
+        }
+        .game-title .flame-letter::before {
+            content: '▲';
+            position: absolute;
+            top: -0.78em;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.45em;
+            color: #ff8c1a;
+            text-shadow: 0 0 12px #ff4500, 0 0 26px #ff0000;
+            animation: lick 0.35s ease-in-out infinite alternate;
+        }
+
+        @keyframes lick {
+            from { transform: translateX(-50%) scale(1) rotate(-6deg); }
+            to   { transform: translateX(-50%) scale(1.35) rotate(7deg); }
+        }
+
+        /* ---------- Flaammes cartoones (style emoji 🔥) ---------- */
+        .fire-emoji {
+            position: fixed;
+            bottom: -60px;
+            z-index: 3;
+            pointer-events: none;
+            user-select: none;
+            filter: drop-shadow(0 0 10px rgba(255, 100, 0, 0.6));
+            animation: emojiRise linear infinite;
+        }
+
+        @keyframes emojiRise {
+            0% {
+                transform: translateY(0) rotate(-8deg) scale(1);
+                opacity: 0;
+            }
+            8% { opacity: 1; }
+            50% {
+                transform: translateY(-55vh) rotate(6deg) scale(1.15);
+            }
+            92% { opacity: 1; }
+            100% {
+                transform: translateY(-115vh) rotate(-5deg) scale(0.7);
+                opacity: 0;
+            }
+        }
+
+        /* ---------- Bouton "Commencer" ---------- */
+        .start-btn {
+            font-family: 'Bangers', cursive;
+            font-size: clamp(28px, 4vw, 44px);
+            letter-spacing: 4px;
+            color: #ffffff;
+            background: #DC143C;
+            border: 5px solid #7d0018;
+            border-radius: 22px;
+            padding: 20px 66px;
+            text-shadow: 3px 3px 0 rgba(0,0,0,0.45);
+            box-shadow: 0 8px 0 #7d0018, 0 0 34px rgba(220, 20, 60, 0.55);
+            transform: rotate(-2deg);
+            position: relative;
+            overflow: visible;
+        }
+
+        .start-btn:hover {
+            background: #FF2E4F;
+            transform: rotate(-2deg) translateY(-4px) scale(1.05);
+            box-shadow: 0 12px 0 #7d0018,
+                        0 0 14px rgba(255, 40, 40, 0.75),
+                        0 0 34px rgba(255, 0, 0, 0.45);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Feu cartoone : fumée + particules + flammes en bas -->
+    <div id="fireContainer">
+        <div class="flames">
+            <div class="flames-back"></div>
+            <div class="flames-mid"></div>
+            <div class="flames-front"></div>
+        </div>
+    </div>
+
+    <!-- Flaammes cartoones (style emoji 🔥) -->
+    <div id="emojiFireContainer"></div>
+
+    <!-- Contenu de la page de départ -->
+    <div class="start-container">
+        <h1 class="game-title">L'apparte<span class="flame-letter">m</span>ent en feu</h1>
+        <button class="start-btn burn-btn" id="startBtn" data-dest="pages/page1.html" data-couleur="blue">Commencer<span class="scorch"></span></button>
+    </div>
+
+    <!-- Transition d'écran (noir puis bleu) -->
+    <div class="screen-transition" id="screenTransition"></div>
+
+    <script>
+        /* ============ PARTICULES DE FEU + FUMÉE ============ */
+        function creerParticules() {
+            const conteneur = document.getElementById('fireContainer');
+
+            // Petites boules de feu qui montent
+            for (let i = 0; i < 46; i++) {
+                const p = document.createElement('div');
+                p.className = 'fire-particle';
+                p.style.left = Math.random() * 100 + 'vw';
+                p.style.animationDelay = (Math.random() * 5).toFixed(2) + 's';
+                p.style.animationDuration = (3 + Math.random() * 3).toFixed(2) + 's';
+                p.style.width = p.style.height = (7 + Math.random() * 13).toFixed(0) + 'px';
+                conteneur.appendChild(p);
+            }
+
+            // Fumée qui dérive vers le haut
+            for (let i = 0; i < 18; i++) {
+                const s = document.createElement('div');
+                s.className = 'smoke-particle';
+                s.style.left = Math.random() * 100 + 'vw';
+                s.style.animationDelay = (Math.random() * 6).toFixed(2) + 's';
+                s.style.animationDuration = (5 + Math.random() * 4).toFixed(2) + 's';
+                s.style.width = s.style.height = (24 + Math.random() * 34).toFixed(0) + 'px';
+                conteneur.appendChild(s);
+            }
+        }
+
+        /* ============ FLAMMES CARTOONES (style emoji 🔥) ============ */
+        function creerFlammesEmoji() {
+            const conteneur = document.getElementById('emojiFireContainer');
+            const tailleBase = [26, 34, 44, 56];
+
+            for (let i = 0; i < 22; i++) {
+                const flamme = document.createElement('span');
+                flamme.className = 'fire-emoji';
+                flamme.textContent = '🔥';
+                flamme.style.left = (Math.random() * 100) + 'vw';
+                flamme.style.fontSize = tailleBase[Math.floor(Math.random() * tailleBase.length)] + 'px';
+                flamme.style.animationDuration = (5 + Math.random() * 5).toFixed(2) + 's';
+                flamme.style.animationDelay = (-Math.random() * 10).toFixed(2) + 's';
+                conteneur.appendChild(flamme);
+            }
+        }
+
+        /* ============ CHARGEMENT ============ */
+        window.addEventListener('load', function () {
+            creerParticules();
+            creerFlammesEmoji();
+        });
+        /* Les effets de brûlure + verrouillage sont gérés par shared.js */
+    </script>
+    <script src="shared.js?v=2"></script>
+
+</body>
+</html>

@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>L'appartement en feu - Le cimetière</title>
+    <link rel="stylesheet" href="../shared.css">
+    <style>
+        body {
+            background: #0d0a14;
+            height: auto;
+            min-height: 100vh;
+            width: 100%;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        /* ============ CIEL ============ */
+        .ciel {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(180deg, #241a3a 0%, #0d0a14 70%);
+            z-index: 0;
+        }
+
+        .lune {
+            position: fixed;
+            top: 8%;
+            right: 10%;
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            background: #f4f0c9;
+            box-shadow: 0 0 60px rgba(244, 240, 201, 0.55);
+            z-index: 1;
+        }
+
+        /* ============ SOL CIMETIÈRE ============ */
+        .sol {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 24%;
+            background: #241c2e;
+            border-top: 6px solid #17111f;
+            z-index: 1;
+        }
+
+        /* ============ TOMBES (dessinées, style joking) ============ */
+        .tombe {
+            position: fixed;
+            z-index: 2;
+        }
+
+        .tombe .pierre {
+            width: 62px;
+            height: 74px;
+            background: #6b6b78;
+            border: 4px solid #43434e;
+            border-radius: 30px 30px 6px 6px;
+        }
+
+        .tombe .pince-sans-nom {
+            position: absolute;
+            top: -6px;
+            left: 50%;
+            margin-left: -7px;
+            width: 14px;
+            height: 30px;
+            background: #55555f;
+            border-radius: 4px;
+        }
+
+        .tombe .raccourci {
+            position: absolute;
+            top: 34px;
+            left: 50%;
+            margin-left: -14px;
+            width: 28px;
+            height: 6px;
+            background: #43434e;
+            border-radius: 3px;
+        }
+
+        /* ============ FANTÔMES FLOTTANTS ============ */
+        .fantome {
+            position: fixed;
+            z-index: 3;
+            font-size: 76px;
+            opacity: 0.75;
+            animation: flotteFantome ease-in-out infinite alternate;
+        }
+
+        @keyframes flotteFantome {
+            0%   { transform: translateY(0) rotate(-4deg); }
+            50%  { transform: translateY(-26px) rotate(4deg); }
+            100% { transform: translateY(-8px) rotate(-2deg); }
+        }
+
+        /* fantôme qui traverse de gauche à droite */
+        .fantome-traverse {
+            animation: traverse linear infinite;
+        }
+
+        @keyframes traverse {
+            0%   { transform: translateX(-140px) translateY(0); opacity: 0; }
+            12%  { opacity: 0.75; }
+            50%  { transform: translateX(55vw) translateY(-22px); }
+            88%  { opacity: 0.75; }
+            100% { transform: translateX(115vw) translateY(0); opacity: 0; }
+        }
+
+        /* ============ TITRE ============ */
+        .site-header {
+            position: relative;
+            z-index: 5;
+            text-align: center;
+            padding: 18px 10px 6px;
+            font-size: 46px;
+            color: #ffffff;
+            letter-spacing: 3px;
+            text-shadow: 3px 3px 0 #4a0d12, 6px 6px 0 rgba(179, 18, 27, 0.5);
+        }
+
+        /* ============ LES DEUX BOÎTES NOIRES ============ */
+        .content-container {
+            position: relative;
+            z-index: 5;
+            display: flex;
+            justify-content: center;
+            align-items: stretch;
+            gap: 26px;
+            padding: 18px 26px 6px;
+        }
+
+        .story-box {
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 22px;
+            padding: 28px;
+            min-height: 380px;
+            flex: 1;
+            max-width: 640px;
+        }
+
+        .image-placeholder {
+            width: 100%;
+            height: 100%;
+            min-height: 324px;
+            background: rgba(255,255,255,0.08);
+            border: 4px dashed rgba(255,255,255,0.55);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            padding: 0;
+            color: rgba(255,255,255,0.75);
+            font-size: 24px;
+            text-align: center;
+        }
+
+        /* L'image remplit tout le cadre, sans déformation */
+        .image-placeholder img {
+            width: 100%;
+            height: 100%;
+            min-height: 324px;
+            border-radius: 12px;
+            object-fit: cover;
+            object-position: center;
+            display: block;
+        }
+
+        .right-box-content {
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .right-box-content h2 {
+            font-size: 34px;
+            margin: 0;
+            color: #FFD700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
+            border-bottom: 3px solid rgba(255,255,255,0.25);
+            padding-bottom: 10px;
+        }
+
+        .right-box-content p {
+            font-family: 'Comic Neue', 'Comic Sans MS', cursive;
+            font-size: 21px;
+            line-height: 1.7;
+            margin: 0;
+        }
+
+        /* ============ BOUTON RECOMMENCER ============ */
+        .restart-btn {
+            position: relative;
+            z-index: 5;
+            display: block;
+            margin: 30px auto 70px;
+            font-family: 'Bangers', cursive;
+            font-size: clamp(26px, 4vw, 40px);
+            letter-spacing: 3px;
+            color: #ffffff;
+            background: #1faa3a;
+            border: 5px solid #0d6b22;
+            border-radius: 24px;
+            padding: 22px 60px;
+            text-shadow: 3px 3px 0 rgba(0,0,0,0.45);
+            box-shadow: 0 9px 0 #0d6b22, 0 0 34px rgba(31, 170, 58, 0.6);
+            cursor: pointer;
+            animation: battement 0.9s ease-in-out infinite;
+        }
+
+        .restart-btn:hover {
+            background: #2ecb52;
+            animation: battementRapide 0.55s ease-in-out infinite;
+        }
+
+        @keyframes battement {
+            0%, 100% { transform: scale(1); }
+            12%       { transform: scale(1.09); }
+            24%       { transform: scale(1); }
+            36%       { transform: scale(1.06); }
+            48%       { transform: scale(1); }
+        }
+
+        @keyframes battementRapide {
+            0%, 100% { transform: scale(1.04); }
+            50%      { transform: scale(1.12); }
+        }
+
+        /* ============ POPUP WARNING (identique à la page burgers) ============ */
+        #overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.65);
+            z-index: 50;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        #overlay.visible { display: flex; }
+
+        .popup {
+            position: relative;
+            width: min(620px, 92vw);
+            background: #1a1a1a;
+            border: 6px solid #ff2b2b;
+            border-radius: 26px;
+            padding: 30px 30px 34px;
+            text-align: center;
+            transform: translateY(130vh) scale(0.85);
+            opacity: 0;
+            box-shadow: 0 0 46px rgba(255, 43, 43, 0.55);
+        }
+
+        #overlay.visible .popup {
+            animation: montePopup 0.65s cubic-bezier(0.18, 1.25, 0.35, 1) forwards;
+        }
+
+        @keyframes montePopup {
+            0%   { transform: translateY(130vh) scale(0.85); opacity: 0; }
+            55%  { transform: translateY(-22px) scale(1.06); opacity: 1; }
+            78%  { transform: translateY(10px) scale(0.98); }
+            100% { transform: translateY(0) scale(1); opacity: 1; }
+        }
+
+        .popup h3 {
+            font-family: 'Bangers', cursive;
+            font-size: clamp(40px, 7vw, 68px);
+            color: #ff2b2b;
+            letter-spacing: 4px;
+            margin: 0 0 18px;
+            text-shadow: 3px 3px 0 #000;
+        }
+
+        .popup .close-x {
+            position: absolute;
+            top: -22px;
+            right: -22px;
+            width: 62px;
+            height: 62px;
+            border-radius: 50%;
+            background: #ff2b2b;
+            border: 5px solid #8b0000;
+            color: #ffffff;
+            font-family: 'Bangers', cursive;
+            font-size: 36px;
+            line-height: 1;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #8b0000;
+            transition: transform 0.2s;
+        }
+        .popup .close-x:hover {
+            transform: scale(1.12) rotate(90deg);
+            background: #ff5a5a;
+        }
+
+        .popup p {
+            font-family: 'Comic Neue', 'Comic Sans MS', cursive;
+            font-size: 21px;
+            line-height: 1.6;
+            color: #ffffff;
+            margin: 0 0 26px;
+        }
+
+        .popup .btn-recommencer {
+            font-family: 'Bangers', cursive;
+            font-size: clamp(26px, 4vw, 36px);
+            letter-spacing: 3px;
+            color: #ffffff;
+            background: #d21f1f;
+            border: 5px solid #7d0000;
+            border-radius: 18px;
+            padding: 16px 52px;
+            cursor: pointer;
+            text-shadow: 3px 3px 0 rgba(0,0,0,0.45);
+            box-shadow: 0 8px 0 #7d0000, 0 0 26px rgba(210, 31, 31, 0.6);
+            transition: all 0.2s;
+        }
+        .popup .btn-recommencer:hover {
+            background: #ff3535;
+            transform: translateY(-3px);
+            box-shadow: 0 11px 0 #7d0000, 0 0 36px rgba(255, 53, 53, 0.8);
+        }
+
+        /* ============ FONDU ============ */
+        #fondu {
+            position: fixed;
+            inset: 0;
+            background: #000;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.7s ease;
+        }
+        #fondu.noir { opacity: 1; }
+
+        @media (max-width: 900px) {
+            .content-container { flex-direction: column; align-items: center; }
+            .story-box { max-width: 640px; width: 100%; min-height: auto; }
+            .site-header { font-size: 30px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Ciel + lune + sol + tombes -->
+    <div class="ciel"></div>
+    <div class="lune"></div>
+    <div class="sol"></div>
+
+    <!-- Tombes -->
+    <div class="tombe" style="left:6%;  bottom:12%; transform:scale(0.9);">
+        <div class="pince-sans-nom"></div>
+        <div class="pierre"></div>
+        <div class="raccourci"></div>
+    </div>
+    <div class="tombe" style="left:17%; bottom:9%;  transform:scale(1.15);">
+        <div class="pince-sans-nom"></div>
+        <div class="pierre"></div>
+        <div class="raccourci"></div>
+    </div>
+    <div class="tombe" style="left:31%; bottom:16%; transform:scale(0.75);">
+        <div class="pince-sans-nom"></div>
+        <div class="pierre"></div>
+        <div class="raccourci"></div>
+    </div>
+    <div class="tombe" style="left:66%; bottom:15%; transform:scale(0.8);">
+        <div class="pince-sans-nom"></div>
+        <div class="pierre"></div>
+        <div class="raccourci"></div>
+    </div>
+    <div class="tombe" style="left:78%; bottom:8%;  transform:scale(1.1);">
+        <div class="pince-sans-nom"></div>
+        <div class="pierre"></div>
+        <div class="raccourci"></div>
+    </div>
+    <div class="tombe" style="left:90%; bottom:14%; transform:scale(0.85);">
+        <div class="pince-sans-nom"></div>
+        <div class="pierre"></div>
+        <div class="raccourci"></div>
+    </div>
+
+    <!-- Fantômes flottants à gauche et à droite -->
+    <div class="fantome" style="left:5%;  top:22%;">👻</div>
+    <div class="fantome" style="left:10%; top:58%; font-size:58px; animation-delay:-1.4s;">👻</div>
+    <div class="fantome" style="left:87%; top:26%; font-size:66px; animation-delay:-0.7s;">👻</div>
+    <div class="fantome" style="left:92%; top:60%; font-size:52px; animation-delay:-2.1s;">👻</div>
+    <div class="fantome-traverse" style="top:40%; font-size:64px;">👻</div>
+    <div class="fantome-traverse" style="top:12%; font-size:48px; animation-duration:17s; animation-delay:-6s;">👻</div>
+
+    <!-- Titre du jeu -->
+    <header class="site-header">L'appartement en feu</header>
+
+    <!-- Les deux boîtes noires transparentes -->
+    <main class="content-container">
+
+        <!-- Boîte gauche : emplacement image -->
+        <section class="story-box">
+            <div class="image-placeholder">
+                <img src="../images/move-a-grave-1024x683.png" alt="Move a Grave">
+            </div>
+        </section>
+
+        <!-- Boîte droite : titre + scénario -->
+        <section class="story-box">
+            <div class="right-box-content">
+                <h2>Appartement en feu</h2>
+                <p>Vous n'avez pas couru assez vite.</p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Bouton recommencer -->
+    <button class="restart-btn" id="btnRecommencer">RECOMMENCER</button>
+
+    <!-- Popup WARNING -->
+    <div id="overlay">
+        <div class="popup">
+            <button class="close-x" id="closeX" aria-label="Fermer">X</button>
+            <h3>WARNING!</h3>
+            <p>Si vous cliquez sur le bouton en bas de ce texte, vous allez recommencer. Pour ne pas recommencer, cliquez sur le X à l'angle de cette fenêtre.</p>
+            <button class="btn-recommencer" id="btnRestartPopup">RECOMMENCER</button>
+        </div>
+    </div>
+
+    <div id="fondu"></div>
+
+    <script>
+        /* ============ POPUP WARNING ============ */
+        const overlay = document.getElementById('overlay');
+        const fondu   = document.getElementById('fondu');
+
+        function ouvrirPopup() {
+            overlay.classList.add('visible');
+        }
+
+        function fermerPopup() {
+            overlay.classList.remove('visible');
+        }
+
+        document.getElementById('btnRecommencer').addEventListener('click', ouvrirPopup);
+        document.getElementById('closeX').addEventListener('click', fermerPopup);
+
+        document.getElementById('btnRestartPopup').addEventListener('click', function () {
+            fermerPopup();
+            fondu.classList.add('noir');
+            setTimeout(function () {
+                window.location.href = '../index.html';
+            }, 800);
+        });
+    </script>
+
+</body>
+</html>

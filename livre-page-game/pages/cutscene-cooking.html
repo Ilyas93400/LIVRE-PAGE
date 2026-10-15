@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>L'appartement en feu - La cuisine</title>
+    <link rel="stylesheet" href="../shared.css">
+    <style>
+        /* ============ SCÈNE (caméra très loin, fixes) ============ */
+        body {
+            background: #000;
+            overflow: hidden;
+            height: 100vh;
+            margin: 0;
+        }
+
+        #cadre {
+            position: fixed;
+            inset: 0;
+            overflow: hidden;
+        }
+
+        #scene {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 1600px;
+            height: 900px;
+            margin-left: -800px;
+            margin-top: -450px;
+            transform: scale(var(--k, 1));
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        /* ---------- CIEL : il change de couleur avec la scene ---------- */
+        #ciel {
+            position: absolute;
+            inset: 0;
+            background: #87CEEB;
+            z-index: 0;
+            transition: background 1.6s linear;
+        }
+        #ciel.enfeu { background: #ff7a18; }
+
+        /* ---------- SOL VERT : hors champ, on est en haut de l'immeuble ---------- */
+        .sol {
+            position: absolute;
+            left: 50%;
+            top: 1400px;
+            width: 2400px;
+            height: 620px;
+            margin-left: -1200px;
+            background: #4e9b3f;
+            border-radius: 50% 50% 0 0 / 120px 120px;
+            border-top: 8px solid #3d7c31;
+            z-index: 2;
+            transition: background 9s linear;
+        }
+        .sol.enfeu { background: #6b4a1f; border-top-color: #4a3315; }
+
+        /* ---------- APPARTEMENT (cartoone, au centre de l'écran) ---------- */
+        #appartement {
+            position: absolute;
+            left: 50%;
+            top: 40px;
+            width: 480px;
+            height: 1160px;
+            margin-left: -240px;
+            background: #e8dcc8;
+            border: 8px solid #b9a88f;
+            border-radius: 12px 12px 6px 6px;
+            z-index: 5;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.25);
+        }
+
+        /* Toit : petit toit en pente */
+        /* Antenne sur le toit */
+        #appartement .antenne {
+            position: absolute;
+            top: -104px;
+            left: 50%;
+            margin-left: -5px;
+            width: 10px;
+            height: 52px;
+            background: #7d6a58;
+            border-radius: 5px;
+        }
+        #appartement .antenne::after {
+            content: '';
+            position: absolute;
+            top: 4px;
+            left: -13px;
+            width: 36px;
+            height: 10px;
+            background: #7d6a58;
+            border-radius: 5px;
+        }
+
+        #appartement .toit {
+            position: absolute;
+            top: -58px;
+            left: -30px;
+            width: 540px;
+            height: 66px;
+            background: #a8543f;
+            border: 8px solid #7d3c2c;
+            border-radius: 14px 14px 4px 4px;
+        }
+
+        /* Petite antenne sur le toit */
+        #appartement .antenne {
+            position: absolute;
+            top: -104px;
+            left: 50%;
+            margin-left: -5px;
+            width: 10px;
+            height: 52px;
+            background: #7d6a58;
+            border-radius: 5px;
+        }
+        #appartement .antenne::after {
+            content: '';
+            position: absolute;
+            top: 4px;
+            left: -13px;
+            width: 36px;
+            height: 10px;
+            background: #7d6a58;
+            border-radius: 5px;
+        }
+
+        /* Étages : 11 étages empilés */
+        .etage {
+            flex: 1;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-evenly;
+            border-bottom: 5px solid #c3b39a;
+        }
+        .etage:last-child { border-bottom: none; }
+
+        /* Fenêtres cartoones (cadre épais + vitre claire + croisillons) */
+        .fenetre {
+            position: relative;
+            width: 88px;
+            height: 58px;
+            background: #9fdcf5;
+            border: 7px solid #8a7a63;
+            border-radius: 7px;
+            box-shadow: inset 0 -12px 0 rgba(255, 255, 255, 0.28);
+        }
+
+        /* Reflet en haut à gauche */
+        .fenetre::before {
+            content: '';
+            position: absolute;
+            top: 5px;
+            left: 6px;
+            width: 16px;
+            height: 16px;
+            background: rgba(255, 255, 255, 0.65);
+            border-radius: 4px;
+            transform: skewX(-18deg);
+        }
+
+        /* Croisillons */
+        .fenetre::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            margin-top: -2px;
+            background: #8a7a63;
+        }
+
+        /* La fenêtre du dernier étage (celle du milieu) qui va exploser */
+        #fenetreExplosive {
+            position: relative;
+            width: 88px;
+            height: 58px;
+            background: #9fdcf5;
+            border: 7px solid #8a7a63;
+            border-radius: 7px;
+            z-index: 3;
+            box-shadow: inset 0 -12px 0 rgba(255, 255, 255, 0.28);
+        }
+        #fenetreExplosive::before {
+            content: '';
+            position: absolute;
+            top: 5px;
+            left: 6px;
+            width: 16px;
+            height: 16px;
+            background: rgba(255, 255, 255, 0.65);
+            border-radius: 4px;
+            transform: skewX(-18deg);
+        }
+        #fenetreExplosive::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            margin-top: -2px;
+            background: #8a7a63;
+        }
+
+        /* Fenêtre qui devient un trou noir */
+        #fenetreExplosive.trou {
+            background: #000;
+            border-color: #3a2b20;
+        }
+        #fenetreExplosive.trou::before,
+        #fenetreExplosive.trou::after { background: #3a2b20; }
+
+        /* ---------- FEU DANS LE TROU ---------- */
+        #feuTrou {
+            position: absolute;
+            inset: 6px;
+            overflow: hidden;
+            border-radius: 3px;
+            opacity: 0;
+            z-index: 4;
+        }
+        #feuTrou.on { opacity: 1; }
+
+        /* Flammes qui montent dans le trou */
+        #feuTrou .flamme {
+            position: absolute;
+            bottom: -24px;
+            width: 30px;
+            height: 40px;
+            background: radial-gradient(ellipse at 50% 80%, #ffe066 0%, #ff9f1c 40%, #ff3b00 75%, transparent 100%);
+            border-radius: 50% 50% 20% 20%;
+            animation: flammeMonte linear infinite;
+        }
+
+        @keyframes flammeMonte {
+            0%   { transform: translateY(0) scale(0.6); opacity: 0; }
+            20%  { opacity: 1; }
+            100% { transform: translateY(-90px) scale(1.25) scaleX(0.7); opacity: 0; }
+        }
+
+        /* Braises */
+        #feuTrou .braise {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #ffd140;
+            animation: braiseMonte linear infinite;
+        }
+        @keyframes braiseMonte {
+            0%   { transform: translate(0, 0); opacity: 1; }
+            100% { transform: translate(var(--bx), -100px); opacity: 0; }
+        }
+
+        /* ---------- FEU SUR TOUT L'APPARTEMENT ---------- */
+        #flammesAppartement {
+            position: absolute;
+            left: 50%;
+            top: 40px;
+            width: 480px;
+            height: 1160px;
+            margin-left: -240px;
+            pointer-events: none;
+            opacity: 0;
+            z-index: 6;
+            transition: opacity 1.5s ease;
+        }
+        #flammesAppartement.on { opacity: 1; }
+
+        #flammesAppartement .f {
+            position: absolute;
+            bottom: 0;
+            width: 46px;
+            height: 56px;
+            background: radial-gradient(ellipse at 50% 78%, #ffe066 0%, #ff9f1c 38%, #ff3b00 72%, transparent 100%);
+            border-radius: 50% 50% 18% 18%;
+            animation: flammeAppart linear infinite;
+        }
+
+        @keyframes flammeAppart {
+            0%   { transform: translateY(0) scale(0.7); opacity: 0.2; }
+            25%  { opacity: 1; }
+            100% { transform: translateY(-160px) scale(1.35) scaleX(0.65); opacity: 0; }
+        }
+
+        /* Fumée qui sort de l'appartement */
+        #fumeeAppartement {
+            position: absolute;
+            left: 50%;
+            top: -420px;
+            width: 480px;
+            height: 420px;
+            margin-left: -240px;
+            pointer-events: none;
+            opacity: 0;
+            z-index: 5;
+            transition: opacity 2s ease;
+        }
+        #fumeeAppartement.on { opacity: 1; }
+
+        #fumeeAppartement .f {
+            position: absolute;
+            bottom: 0;
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            background: rgba(60, 50, 45, 0.55);
+            animation: fumeeMonte linear infinite;
+        }
+
+        @keyframes fumeeMonte {
+            0%   { transform: translateY(0) scale(0.5); opacity: 0; }
+            20%  { opacity: 0.8; }
+            100% { transform: translateY(-340px) scale(2.4); opacity: 0; }
+        }
+
+        /* ---------- EXPLOSION (positionnée sur la fenêtre par le JS) ---------- */
+        #explosion {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            z-index: 8;
+            pointer-events: none;
+            opacity: 0;
+        }
+        #explosion.on { animation: explosionAnim 0.7s ease-out; }
+
+        @keyframes explosionAnim {
+            0%   { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+            35%  { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1.9); opacity: 0; }
+        }
+
+        /* Bouffée de fumée claire au centre */
+        #explosion .flash {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            background: radial-gradient(circle, #fff8d0 0%, #ffd140 35%, #ff7a18 62%, transparent 75%);
+        }
+
+        /* Onde de choc */
+        #explosion .onde {
+            position: absolute;
+            inset: 0;
+            border: 14px solid #ffd140;
+            border-radius: 50%;
+        }
+
+        /* Anneau orange plus rapide */
+        #explosion .onde2 {
+            position: absolute;
+            inset: 26px;
+            border: 12px solid #ff4500;
+            border-radius: 50%;
+            animation: onde2Anim 0.45s ease-out;
+        }
+
+        @keyframes onde2Anim {
+            0%   { transform: scale(0.35); opacity: 1; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+
+        /* débris qui volent */
+        .debris {
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            margin-left: -7px;
+            margin-top: -7px;
+            background: #6f6558;
+            border-radius: 2px;
+            z-index: 9;
+            pointer-events: none;
+            animation: debrisVoler ease-out forwards;
+        }
+        @keyframes debrisVoler {
+            0%   { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; }
+            100% { transform: translate(var(--dx), var(--dy)) rotate(var(--dr)) scale(0.3); opacity: 0; }
+        }
+
+        /* ---------- FONDU FINAL (noir) ---------- */
+        #fondu {
+            position: fixed;
+            inset: 0;
+            background: #000;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.8s ease;
+        }
+        #fondu.noir { opacity: 1; }
+    </style>
+</head>
+<body>
+
+    <div id="cadre">
+    <div id="scene">
+
+        <div id="ciel"></div>
+
+        <!-- Nuages / oiseaux / avions (générés en JS, réutilisés de shared.css) -->
+        <div id="cielElements"></div>
+
+        <!-- Sol vert rond -->
+        <div class="sol" id="sol"></div>
+
+        <!-- Appartement -->
+        <div id="appartement">
+            <div class="antenne"></div>
+            <div class="toit"></div>
+
+            <!-- 13 étages de 3 fenêtres.
+                 La fenêtre du MILIEU du 3e étage (depuis le toit) est celle
+                 qui explose : c'est la seule qui a l'id "fenetreExplosive". -->
+            <div class="etage">
+                <div class="fenetre"></div>
+                <div class="fenetre"></div>
+                <div class="fenetre"></div>
+            </div>
+            <div class="etage">
+                <div class="fenetre"></div>
+                <div class="fenetre"></div>
+                <div class="fenetre"></div>
+            </div>
+            <div class="etage">
+                <div class="fenetre"></div>
+                <div id="fenetreExplosive">
+                    <div id="feuTrou"></div>
+                </div>
+                <div class="fenetre"></div>
+            </div>
+            <div class="etage">
+                <div class="fenetre"></div>
+                <div class="fenetre"></div>
+                <div class="fenetre"></div>
+            </div>
+            <div class="etage">
+                <div class="fenetre"></div>
+                <div class="fenetre"></div>
+                <div class="fenetre"></div>
+            </div>
+            <div class="etage">
+                <div class="fenetre"></div>
+                <div class="fenetre"></div>
+                <div class="fenetre"></div>
+            </div>
+            <div class="etage">
+                <div class="fenetre"></div>
+                <div class="fenetre"></div>
+                <div class="fenetre"></div>
+            </div>
+            <div class="etage">
+                <div class="fenetre"></div>
+                <div class="fenetre"></div>
+                <div class="fenetre"></div>
+            </div>
+            <div class="etage">
+                <div class="fenetre"></div>
+                <div class="fenetre"></div>
+                <div class="fenetre"></div>
+            </div>
+            <div class="etage">
+                <div class="fenetre"></div>
+                <div class="fenetre"></div>
+                <div class="fenetre"></div>
+            </div>
+            <div class="etage">
+                <div class="fenetre"></div>
+                <div class="fenetre"></div>
+                <div class="fenetre"></div>
+            </div>
+            <div class="etage">
+                <div class="fenetre"></div>
+                <div class="fenetre"></div>
+                <div class="fenetre"></div>
+            </div>
+            <div class="etage">
+                <div class="fenetre"></div>
+                <div class="fenetre"></div>
+                <div class="fenetre"></div>
+            </div>
+            <div class="etage">
+                <div class="fenetre"></div>
+                <div class="fenetre"></div>
+                <div class="fenetre"></div>
+            </div>
+        </div>
+
+        <!-- Feu sur tout l'appartement + fumée -->
+        <div id="fumeeAppartement"></div>
+        <div id="flammesAppartement"></div>
+
+        <!-- Explosion -->
+        <div id="explosion">
+            <div class="flash"></div>
+            <div class="onde"></div>
+            <div class="onde2"></div>
+        </div>
+
+    </div>
+    </div>
+
+    <div id="fondu"></div>
+
+    <script>
+        const ciel        = document.getElementById('ciel');
+        const cielElements = document.getElementById('cielElements');
+        const sol         = document.getElementById('sol');
+        const appartement = document.getElementById('appartement');
+        const fenetreExp  = document.getElementById('fenetreExplosive');
+        const feuTrou     = document.getElementById('feuTrou');
+        const flammesApp  = document.getElementById('flammesAppartement');
+        const fumeeApp    = document.getElementById('fumeeAppartement');
+        const explosion   = document.getElementById('explosion');
+        const fondu       = document.getElementById('fondu');
+
+        const ATTENTE = ms => new Promise(r => setTimeout(r, ms));
+
+        /* ---------- Mise à l'échelle ---------- */
+        function mettreAEchelle() {
+            const k = Math.min(window.innerWidth / 1600, window.innerHeight / 900);
+            document.documentElement.style.setProperty('--k', k);
+        }
+        window.addEventListener('resize', mettreAEchelle);
+        mettreAEchelle();
+
+        /* ---------- Nuages, oiseaux et avions (fond lointain) ---------- */
+        function creerNuages() {
+            const tailles = [
+                { l: 220, h: 70 }, { l: 160, h: 55 }, { l: 300, h: 95 },
+                { l: 140, h: 48 }, { l: 260, h: 80 }, { l: 200, h: 62 }
+            ];
+            tailles.forEach((t, i) => {
+                const nuage = document.createElement('div');
+                nuage.className = 'cloud';
+                nuage.style.width = t.l + 'px';
+                nuage.style.height = t.h + 'px';
+                nuage.style.top = (4 + i * 9) + '%';
+                nuage.style.animationDuration = (55 + i * 14) + 's';
+                nuage.style.animationDelay = (-i * 16) + 's';
+                if (i % 2 === 0) nuage.style.opacity = '0.9';
+                cielElements.appendChild(nuage);
+            });
+        }
+
+        function creerOiseaux() {
+            for (let i = 0; i < 3; i++) {
+                const oiseau = document.createElement('div');
+                oiseau.className = 'bird';
+                oiseau.innerHTML =
+                    '<svg viewBox="0 0 40 16" width="34" height="14">' +
+                    '<path class="bird-wing-left"  d="M20 10 Q11 1 1 5"  fill="none" stroke="#2f3b52" stroke-width="3.4" stroke-linecap="round"/>' +
+                    '<path class="bird-wing-right" d="M20 10 Q29 1 39 5"  fill="none" stroke="#2f3b52" stroke-width="3.4" stroke-linecap="round"/>' +
+                    '</svg>';
+                oiseau.style.top = (16 + i * 12) + '%';
+                oiseau.style.opacity = '0.75';
+                oiseau.style.transform = 'scale(' + (0.5 + i * 0.16) + ')';
+                oiseau.style.animationDuration = (60 + i * 16) + 's';
+                oiseau.style.animationDelay = (-i * 22) + 's';
+                oiseau.dataset.vol = '1';
+                cielElements.appendChild(oiseau);
+            }
+        }
+
+        function creerAvions() {
+            for (let i = 0; i < 2; i++) {
+                const avion = document.createElement('div');
+                avion.className = 'plane';
+                avion.innerHTML =
+                    '<svg viewBox="0 0 60 26" width="52" height="22">' +
+                    '<ellipse cx="28" cy="14" rx="24" ry="6" fill="#f4f7ff" stroke="#2f3b52" stroke-width="2"/>' +
+                    '<path d="M26 13 L8 3 L18 14 Z" fill="#e14b3c" stroke="#2f3b52" stroke-width="1.6"/>' +
+                    '<path d="M46 12 L56 3 L57 12 Z" fill="#e14b3c" stroke="#2f3b52" stroke-width="1.6"/>' +
+                    '<circle cx="49" cy="14" r="4.5" fill="#ffd23f" stroke="#2f3b52" stroke-width="1.6"/>' +
+                    '<circle cx="16" cy="14" r="2" fill="#2f3b52"/>' +
+                    '</svg>';
+                avion.style.top = (6 + i * 9) + '%';
+                avion.style.opacity = '0.7';
+                avion.style.transform = 'scale(' + (0.55 + i * 0.28) + ')';
+                avion.style.animationDuration = (80 + i * 25) + 's';
+                avion.style.animationDelay = (-i * 40) + 's';
+                avion.dataset.vol = '1';
+                cielElements.appendChild(avion);
+            }
+        }
+
+        /* Nuages gris quand le ciel vire à l'orange */
+        function grisifierNuages() {
+            document.querySelectorAll('#cielElements .cloud').forEach(function (nuage) {
+                nuage.style.filter = 'grayscale(1) brightness(0.7)';
+            });
+        }
+
+        /* Les oiseaux et avions tombent hors champ */
+        function faireTomberVol() {
+            document.querySelectorAll('#cielElements .bird, #cielElements .plane').forEach(function (v, i) {
+                v.style.transition = 'transform 3.2s cubic-bezier(0.5, 0, 0.85, 0.4), opacity 3.2s ease';
+                v.style.transform = 'translate(60px, 950px) rotate(140deg)';
+                v.style.opacity = '0';
+                setTimeout(function () { v.remove(); }, 3600);
+            });
+        }
+
+        /* ---------- Feu dans le trou ---------- */
+        function creerFeuTrou() {
+            for (let i = 0; i < 14; i++) {
+                const flamme = document.createElement('div');
+                flamme.className = 'flamme';
+                flamme.style.left = (Math.random() * 100) + '%';
+                flamme.style.animationDuration = (0.8 + Math.random() * 0.7).toFixed(2) + 's';
+                flamme.style.animationDelay = (-Math.random() * 1.4).toFixed(2) + 's';
+                feuTrou.appendChild(flamme);
+            }
+            for (let i = 0; i < 20; i++) {
+                const braise = document.createElement('div');
+                braise.className = 'braise';
+                braise.style.left = (Math.random() * 100) + '%';
+                braise.style.bottom = (Math.random() * 40) + '%';
+                braise.style.setProperty('--bx', ((Math.random() - 0.5) * 90).toFixed(0) + 'px');
+                braise.style.animationDuration = (0.9 + Math.random() * 0.8).toFixed(2) + 's';
+                braise.style.animationDelay = (-Math.random() * 1.6).toFixed(2) + 's';
+                feuTrou.appendChild(braise);
+            }
+        }
+
+        /* ---------- Feu sur tout l'appartement ---------- */
+        function enflammerAppartement() {
+            // flammes sur le toit et les étages
+            for (let i = 0; i < 40; i++) {
+                const f = document.createElement('div');
+                f.className = 'f';
+                f.style.left = (Math.random() * 100) + '%';
+                f.style.animationDuration = (1 + Math.random() * 1.4).toFixed(2) + 's';
+                f.style.animationDelay = (-Math.random() * 2.4).toFixed(2) + 's';
+                flammesApp.appendChild(f);
+            }
+            // fumée
+            for (let i = 0; i < 22; i++) {
+                const f = document.createElement('div');
+                f.className = 'f';
+                f.style.left = (Math.random() * 100) + '%';
+                f.style.animationDuration = (3.4 + Math.random() * 2.6).toFixed(2) + 's';
+                f.style.animationDelay = (-Math.random() * 5).toFixed(2) + 's';
+                fumeeApp.appendChild(f);
+            }
+            flammesApp.classList.add('on');
+            fumeeApp.classList.add('on');
+        }
+
+        /* ---------- Place l'explosion pile sur la fenêtre ---------- */
+        function placerExplosion() {
+            const r = fenetreExp.getBoundingClientRect();
+            const sr = scene.getBoundingClientRect();
+            const k = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--k')) || 1;
+
+            // centre de la fenêtre, converti en coordonnées de la scène
+            const cx = (r.left - sr.left) / k + r.width / k / 2;
+            const cy = (r.top - sr.top) / k + r.height / k / 2;
+
+            explosion.style.left = cx + 'px';
+            explosion.style.top = cy + 'px';
+
+            return { cx: cx, cy: cy, k: k };
+        }
+
+        /* ---------- Débris de l'explosion ---------- */
+        function creerDebris(pos) {
+            for (let i = 0; i < 16; i++) {
+                const d = document.createElement('div');
+                d.className = 'debris';
+                d.style.left = pos.cx + 'px';
+                d.style.top = pos.cy + 'px';
+                d.style.setProperty('--dx', ((Math.random() - 0.5) * 300 / pos.k).toFixed(0) + 'px');
+                d.style.setProperty('--dy', ((-90 - Math.random() * 200) / pos.k).toFixed(0) + 'px');
+                d.style.setProperty('--dr', (Math.random() * 900 - 450).toFixed(0) + 'deg');
+                d.style.animationDuration = (0.9 + Math.random() * 0.7).toFixed(2) + 's';
+                scene.appendChild(d);
+                setTimeout(function (el) { return function () { el.remove(); }; }(d), 2000);
+            }
+        }
+
+        /* ============ SCÉNARIO ============ */
+        async function lancerScene() {
+            creerNuages();
+            creerOiseaux();
+            creerAvions();
+
+            // 1) Rien ne se passe : la caméra reste fixe un moment
+            await ATTENTE(2600);
+
+            // 2) La fenêtre du dernier étage explose
+            const posExplosion = placerExplosion();
+            explosion.classList.add('on');
+            creerDebris(posExplosion);
+            await ATTENTE(300);
+
+            // 3) La fenêtre devient un trou noir
+            fenetreExp.classList.add('trou');
+            await ATTENTE(450);
+
+            // 4) Du feu animé apparaît dans le trou
+            creerFeuTrou();
+            feuTrou.classList.add('on');
+            await ATTENTE(2400);
+
+            // 5) Le ciel vire vite à l'orange + les nuages gris + les vols tombent
+            ciel.classList.add('enfeu');
+            sol.classList.add('enfeu');
+            grisifierNuages();
+            faireTomberVol();
+            await ATTENTE(2600);
+
+            // 6) L'appartement est entièrement en feu (mais ne s'effondre pas)
+            enflammerAppartement();
+            await ATTENTE(3200);
+
+            // 7) Fondu au noir puis page suivante
+            fondu.classList.add('noir');
+            await ATTENTE(1500);
+
+            window.location.href = 'cooking-fire-page.html';
+        }
+
+        lancerScene();
+    </script>
+
+</body>
+</html>

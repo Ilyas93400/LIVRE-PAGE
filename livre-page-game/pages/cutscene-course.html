@@ -1,0 +1,1433 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>L'appartement en feu - La course</title>
+    <link rel="stylesheet" href="../shared.css">
+    <style>
+        /* ============ CADRE (scène 1600x900 mise à l'échelle) ============ */
+        body {
+            background: #000;
+            overflow: hidden;
+            height: 100vh;
+            margin: 0;
+        }
+
+        #cadre {
+            position: fixed;
+            inset: 0;
+            overflow: hidden;
+        }
+
+        #scene {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 1600px;
+            height: 900px;
+            margin-left: -800px;
+            margin-top: -450px;
+            transform: scale(var(--k, 1));
+            overflow: hidden;
+            background: #f4f1ea;
+            z-index: 1;
+        }
+
+        /* ---------- LE MUR BLANC DU COULOIR ---------- */
+        .mur {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 0;
+            height: 640px;
+            background: #f7f5ef;
+            background-image:
+                repeating-linear-gradient(90deg,
+                    #f7f5ef 0 150px,
+                    #e4e0d6 150px 158px);
+            z-index: 0;
+        }
+
+        /* Plinthe du mur */
+        .plinthe {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 596px;
+            height: 44px;
+            background: #d8d3c6;
+            border-top: 4px solid #bdb7a8;
+            z-index: 1;
+        }
+
+        /* ---------- LE SOL CLAIR MARON ---------- */
+        .sol {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 260px;
+            background: #d9b382;
+            background-image:
+                repeating-linear-gradient(90deg,
+                    rgba(0,0,0,0.07) 0 4px,
+                    transparent 4px 120px);
+            border-top: 5px solid #b8935f;
+            z-index: 1;
+        }
+
+        /* ---------- STICKMAN QUI COURT (même style que la caisse) ---------- */
+        .stickman {
+            position: absolute;
+            width: 240px;
+            height: 500px;
+            margin-left: -120px;
+            z-index: 5;
+        }
+
+        .stickman .tete {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            margin-left: -60px;
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: #1a1a1a;
+        }
+
+        .stickman .corps {
+            position: absolute;
+            top: 108px;
+            left: 50%;
+            margin-left: -16px;
+            width: 32px;
+            height: 190px;
+            background: #1a1a1a;
+            border-radius: 16px;
+        }
+
+        .stickman .bras,
+        .stickman .jambe {
+            position: absolute;
+            width: 32px;
+            background: #1a1a1a;
+            border-radius: 16px;
+            transform-origin: top center;
+        }
+
+        .stickman .bras-g { top: 125px; left: 50%; margin-left: -14px; height: 150px; }
+        .stickman .bras-d { top: 125px; left: 50%; margin-left: -18px; height: 150px; }
+        .stickman .jambe-g { top: 292px; left: 50%; margin-left: -14px; height: 208px; }
+        .stickman .jambe-d { top: 292px; left: 50%; margin-left: -18px; height: 208px; }
+
+        /* Animation de course : bras et jambes très rapides */
+        .stickman.court .jambe-g { animation: courseG 0.28s ease-in-out infinite alternate; }
+        .stickman.court .jambe-d { animation: courseD 0.28s ease-in-out infinite alternate; }
+        .stickman.court .bras-g  { animation: brasG  0.28s ease-in-out infinite alternate; }
+        .stickman.court .bras-d  { animation: brasD  0.28s ease-in-out infinite alternate; }
+
+        @keyframes courseG { from { transform: rotate(38deg); }  to { transform: rotate(-38deg); } }
+        @keyframes courseD { from { transform: rotate(-38deg); } to { transform: rotate(38deg); } }
+        @keyframes brasG  { from { transform: rotate(-34deg); } to { transform: rotate(34deg); } }
+        @keyframes brasD  { from { transform: rotate(34deg); }  to { transform: rotate(-34deg); } }
+
+        /* Ombre au sol */
+        .stickman::after {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: 50%;
+            margin-left: -56px;
+            width: 112px;
+            height: 18px;
+            background: rgba(0, 0, 0, 0.22);
+            border-radius: 50%;
+        }
+
+        /* ---------- LIGNES DE VITESSE ---------- */
+        .ligneVitesse {
+            position: absolute;
+            height: 5px;
+            background: rgba(255,255,255,0.55);
+            border-radius: 3px;
+            z-index: 4;
+            animation: defileVitesse linear infinite;
+        }
+
+        @keyframes defileVitesse {
+            0%   { transform: translateX(0); opacity: 0; }
+            10%  { opacity: 0.7; }
+            100% { transform: translateX(-700px); opacity: 0; }
+        }
+
+        /* Quand le joueur ne clique plus, les lignes de vitesse
+           s'arrêtent : ça rend la lecture du "spam" évidente. */
+        #lignesVitesse.ralenti .ligneVitesse {
+            animation-play-state: paused;
+        }
+
+        /* ---------- LE FEU QUI RATTRAPE ----------
+           Style "flat cartoon" : formes pleines sans dégradé ni
+           flou. Trois couches de langues de feu :
+               jaune (le fond)  →  orange (milieu)  →  rouge (devant)
+           Chaque langue est un SVG et on la fait onduler. */
+        #feuDerriere {
+            position: absolute;
+            left: -700px;
+            bottom: 0;
+            width: 760px;
+            height: 900px;
+            z-index: 6;
+            pointer-events: none;
+
+            /* Au départ le feu est caché et un peu plus petit :
+               il "éclate" à l'écran quand la classe .apparu
+               est ajoutée (voir l'intro dans le JS). */
+            opacity: 0;
+            transform: scale(0.78);
+            transition: opacity 0.55s ease,
+                        transform 0.7s cubic-bezier(0.2, 1.35, 0.4, 1);
+        }
+
+        #feuDerriere.apparu {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        /* Une langue de feu (SVG).
+           bottom: -90px pour qu'aucun jour ne s'ouvre
+           au niveau du sol, même avec les langues les plus courtes. */
+        .langue {
+            position: absolute;
+            bottom: -90px;
+            transform-origin: 50% 100%;
+            will-change: transform;
+        }
+
+        .langue svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+            overflow: visible;
+        }
+
+        /* --- Les 4 teintes du feu ---
+           rouge foncé : l'arrière du mur de feu
+           jaune  : la masse profonde
+           orange : le milieu
+           rouge  : le devant qui avance vers le joueur */
+        .langue.rougeFonce path { fill: #D84315; }
+        .langue.jaune  path { fill: #FFC800; }
+        .langue.orange path { fill: #FF8A00; }
+        .langue.rouge  path { fill: #F4511E; }
+
+        /* --- L'ondulation des langues ---
+           Chaque langue a son propre délai, donc le feu respire
+           sans jamais être synchrone. */
+        @keyframes onduleLangue {
+            0%   { transform: rotate(-2.5deg) scaleY(1)     scaleX(1);    }
+            25%  { transform: rotate(1.5deg)  scaleY(1.045) scaleX(0.97); }
+            50%  { transform: rotate(3deg)    scaleY(0.97)  scaleX(1.03); }
+            75%  { transform: rotate(-1deg)   scaleY(1.03)  scaleX(0.99); }
+            100% { transform: rotate(-2.5deg) scaleY(1)     scaleX(1);    }
+        }
+
+        /* Les bulles rondes qui montent (comme sur l'image) */
+        .bulleFeu {
+            position: absolute;
+            border-radius: 50%;
+            will-change: transform, opacity;
+            animation: monteBulleFeu linear infinite;
+        }
+
+        @keyframes monteBulleFeu {
+            0%   { transform: translateY(0)     scale(0.5);            opacity: 0;    }
+            15%  { opacity: 1;    }
+            60%  { opacity: 0.9;  }
+            100% { transform: translateY(-620px) scale(1.15);         opacity: 0;    }
+        }
+
+        /* Les braises carrées qui montent */
+        .braiseFeu {
+            position: absolute;
+            border-radius: 2px;
+            will-change: transform, opacity;
+            animation: monteBraiseFeu linear infinite;
+        }
+
+        @keyframes monteBraiseFeu {
+            0%   { transform: translate(0, 0) scale(1) rotate(0deg);      opacity: 1;    }
+            30%  { transform: translate(18px, -190px) scale(1.1) rotate(90deg); }
+            70%  { transform: translate(40px, -430px) scale(0.8) rotate(200deg); opacity: 0.7; }
+            100% { transform: translate(66px, -700px) scale(0.2) rotate(360deg); opacity: 0; }
+        }
+
+        /* Une lueur chaude plate derrière le feu (pas de flou) */
+        .lueurFeu {
+            position: absolute;
+            left: -40px;
+            bottom: 0;
+            width: 460px;
+            height: 900px;
+            background: linear-gradient(90deg,
+                rgba(255, 200, 0, 0.35) 0%,
+                rgba(255, 138, 0, 0.18) 55%,
+                rgba(244, 81, 30, 0) 100%);
+            animation: pulseLueurFeu 1.2s ease-in-out infinite;
+        }
+
+        @keyframes pulseLueurFeu {
+            0%, 100% { opacity: 0.75; }
+            50%      { opacity: 1;    }
+        }
+        /* ---------- L'ENTRÉE DE L'ASCENSEUR ----------
+           Un CARRÉ posé sur le mur du fond, au niveau du sol.
+           Il est en arrière-plan (z-index 4) : le coureur passe
+           devant lui et entre par la porte. */
+        #ascenseur {
+            position: absolute;
+            left: 1180px;
+            bottom: 260px;
+            width: 380px;
+            height: 460px;
+            background: #2a2f38;
+            border: 10px solid #6b7280;
+            border-radius: 8px;
+            z-index: 4;
+            display: none;
+            overflow: hidden;
+            box-shadow:
+                0 18px 34px rgba(0,0,0,0.55),
+                inset 0 0 40px rgba(0,0,0,0.6);
+        }
+
+        #ascenseur.visible { display: block; }
+
+        /* L'intérieur sombre de la cabine */
+        #ascenseur .fondCabine {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at 50% 40%,
+                #4a5260 0%, #232830 60%, #12151a 100%);
+        }
+
+        /* Les deux battants de porte - OUVERTS par défaut */
+        #ascenseur .porte {
+            position: absolute;
+            top: 0;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(180deg, #aab1bd 0%, #848c99 60%, #6b7382 100%);
+            transition: transform 1s cubic-bezier(0.4, 0, 0.3, 1);
+        }
+        /* Par défaut : portes OUVERTES sur les côtés */
+        #ascenseur .porte-g { left: -50%;  border-right: 4px solid #565d68; }
+        #ascenseur .porte-d { right: -50%; border-right: none; border-left: 4px solid #565d68; }
+        /* .ferme = portes FERMÉES (reviennent au centre) */
+        #ascenseur .porte-g.ferme { transform: translateX(100%); }
+        #ascenseur .porte-d.ferme { transform: translateX(-100%); }
+
+        /* Le petit voyant au-dessus de la porte */
+        #ascenseur .lampe {
+            position: absolute;
+            top: 14px;
+            left: 50%;
+            margin-left: -45px;
+            width: 90px;
+            height: 16px;
+            background: #7CFC00;
+            border: 4px solid #2f7a00;
+            border-radius: 8px;
+            z-index: 3;
+            box-shadow: 0 0 16px rgba(124, 252, 0, 0.8);
+        }
+
+        /* ---------- EFFET HOLOGRAMME ----------
+           Quand le coureur entre dans la cabine il se dissout. */
+        #coureur.hologramme {
+            animation: dissolveCoureur 1.5s ease-in forwards;
+        }
+
+        @keyframes dissolveCoureur {
+            0%   { opacity: 1;   filter: none; }
+            55%  { opacity: 0.55; filter: hue-rotate(40deg) saturate(2); }
+            100% { opacity: 0;   filter: hue-rotate(90deg) saturate(3) brightness(2); }
+        }
+
+        /* ---------- HUD : chrono, consigne et barre ---------- */
+        #chrono {
+            position: absolute;
+            top: 30px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-family: 'Bangers', cursive;
+            font-size: 88px;
+            letter-spacing: 6px;
+            color: #ffffff;
+            text-shadow: 4px 4px 0 #c1121f, 8px 8px 0 rgba(0,0,0,0.3);
+            z-index: 10;
+        }
+
+        #chrono.urgent {
+            color: #ff2b2b;
+            animation: urgence 0.4s infinite alternate;
+        }
+
+        @keyframes urgence {
+            from { transform: scale(1); }
+            to   { transform: scale(1.12); }
+        }
+
+        #consigne {
+            position: absolute;
+            top: 140px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-family: 'Bangers', cursive;
+            font-size: 46px;
+            letter-spacing: 3px;
+            z-index: 10;
+            animation: clignote 0.35s infinite;
+        }
+
+        @keyframes clignote {
+            0%   { color: #ffffff; text-shadow: 3px 3px 0 #c1121f; }
+            100% { color: #ff2b2b; text-shadow: 3px 3px 0 #ffffff; }
+        }
+
+        /* La barre */
+        #barre {
+            position: absolute;
+            left: 690px;
+            top: 660px;
+            width: 420px;
+            height: 46px;
+            background: #000000;
+            border: 6px solid #ffffff;
+            border-radius: 10px;
+            z-index: 10;
+            overflow: hidden;
+        }
+
+        /* Le remplissage rouge */
+        #remplissage {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(180deg, #ff5a5a 0%, #c1121f 100%);
+            transition: width 0.12s ease-out;
+        }
+
+        /* La petite ligne rouge qui apparaît à chaque clic */
+        .ligneClic {
+            position: absolute;
+            top: 0;
+            width: 5px;
+            height: 100%;
+            background: #ffffff;
+            box-shadow: 0 0 12px #ffffff;
+            z-index: 2;
+            animation: ligneDisparait 0.45s ease-out forwards;
+        }
+
+        @keyframes ligneDisparait {
+            0%   { opacity: 1; transform: scaleY(1); }
+            100% { opacity: 0; transform: scaleY(1.6); }
+        }
+
+        /* ---------- LA TOUCHE ESPACE ----------
+           Dessinée comme une vraie touche de clavier, juste sous la
+           barre. Elle s'enfonce 2 fois par seconde pour montrer au
+           joueur ce qu'il doit faire. */
+        #toucheEspace {
+            position: absolute;
+            /* Aligne pile sous la barre : la barre est a left:690px
+               sur 420px de large, donc son centre est a 900px.
+               900 - 160 (moitié de la touche) = 740px. */
+            left: 740px;
+            top: 730px;
+            width: 320px;
+            height: 84px;
+            z-index: 10;
+        }
+
+        /* Le corps de la touche */
+        .touche {
+            position: absolute;
+            inset: 0;
+            border-radius: 12px;
+            background: linear-gradient(180deg, #ffffff 0%, #e8e8ec 62%, #c9c9d2 100%);
+            border: 5px solid #8a8a96;
+            box-shadow:
+                0 8px 0 #6f6f7c,
+                0 12px 18px rgba(0, 0, 0, 0.45),
+                inset 0 3px 0 rgba(255, 255, 255, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: enfonceEspace 0.5s ease-in-out infinite;
+        }
+
+        /* L'effet d'enfoncement : 2 appuis par seconde */
+        @keyframes enfonceEspace {
+            0%   { transform: translateY(0);    box-shadow: 0 8px 0 #6f6f7c, 0 12px 18px rgba(0,0,0,0.45), inset 0 3px 0 rgba(255,255,255,0.95); }
+            14%  { transform: translateY(7px);  box-shadow: 0 1px 0 #6f6f7c, 0 3px 6px rgba(0,0,0,0.45),  inset 0 1px 0 rgba(255,255,255,0.6); }
+            28%  { transform: translateY(0);    box-shadow: 0 8px 0 #6f6f7c, 0 12px 18px rgba(0,0,0,0.45), inset 0 3px 0 rgba(255,255,255,0.95); }
+            50%  { transform: translateY(0);    box-shadow: 0 8px 0 #6f6f7c, 0 12px 18px rgba(0,0,0,0.45), inset 0 3px 0 rgba(255,255,255,0.95); }
+            64%  { transform: translateY(7px);  box-shadow: 0 1px 0 #6f6f7c, 0 3px 6px rgba(0,0,0,0.45),  inset 0 1px 0 rgba(255,255,255,0.6); }
+            78%  { transform: translateY(0);    box-shadow: 0 8px 0 #6f6f7c, 0 12px 18px rgba(0,0,0,0.45), inset 0 3px 0 rgba(255,255,255,0.95); }
+            100% { transform: translateY(0);    box-shadow: 0 8px 0 #6f6f7c, 0 12px 18px rgba(0,0,0,0.45), inset 0 3px 0 rgba(255,255,255,0.95); }
+        }
+
+        /* Le mot "ESPACE" écrit sur la touche */
+        .touche-libelle {
+            font-family: 'Bangers', cursive;
+            font-size: 64px;
+            letter-spacing: 8px;
+            color: #3d3d48;
+            text-shadow: 0 2px 0 rgba(255, 255, 255, 0.9);
+            user-select: none;
+            pointer-events: none;
+        }
+
+        /* ==========================================================
+           INTRO : l'UI est INVISIBLE au depart, puis elle tombe
+           en place comme dans la scène de mort (chute rapide,
+           léger dépassement, petit rebond)
+           ========================================================== */
+
+        /* Tant que la classe .tombe n'est pas posée, l'UI n'existe
+           pas à l'écran : elle tombe seulement quand l'intro
+           le décide. */
+        #chrono,
+        #consigne,
+        #barre,
+        #toucheEspace {
+            opacity: 0;
+        }
+
+        #chrono.tombe,
+        #consigne.tombe,
+        #barre.tombe,
+        #toucheEspace.tombe {
+            opacity: 1;
+        }
+
+        @keyframes chuteUI {
+            0%   { transform: translateY(-130vh); }
+            74%  { transform: translateY(16px); }
+            88%  { transform: translateY(-9px); }
+            100% { transform: translateY(0); }
+        }
+
+        /* Le chrono est centré avec translateX(-50%) : sa chute
+           doit garder ce centrage, sinon il saute à gauche. */
+        @keyframes chuteUICentre {
+            0%   { transform: translate(-50%, -130vh); }
+            74%  { transform: translate(-50%, 16px); }
+            88%  { transform: translate(-50%, -9px); }
+            100% { transform: translate(-50%, 0); }
+        }
+
+        #barre.tombe,
+        #consigne.tombe,
+        #toucheEspace.tombe {
+            animation: chuteUI 0.75s cubic-bezier(0.45, 0, 0.7, 0.55) forwards;
+        }
+
+        #chrono.tombe {
+            animation: chuteUICentre 0.75s cubic-bezier(0.45, 0, 0.7, 0.55) forwards;
+        }
+
+        /* ==========================================================
+           SCÈNE DE MORT (même animation de sang que les autres)
+           ========================================================== */
+        #sangMasse {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 0;
+            background: #b3121b;
+            z-index: 20; pointer-events: none; opacity: 0;
+        }
+
+        #bordSang {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 300px;
+            margin-top: -276px;
+            z-index: 21; pointer-events: none; opacity: 0;
+        }
+
+        #bordSang svg { width: 100%; height: 100%; display: block; overflow: visible; }
+
+        .bulle {
+            position: fixed;
+            border-radius: 50%;
+            background: rgba(255, 120, 120, 0.45);
+            border: 3px solid rgba(90, 10, 16, 0.45);
+            z-index: 22; pointer-events: none;
+            animation: remonteBulle linear forwards;
+        }
+
+        @keyframes remonteBulle {
+            0%   { transform: translateY(0) scale(0.4); opacity: 0; }
+            20%  { opacity: 0.9; }
+            100% { transform: translateY(-260px) scale(1.15); opacity: 0; }
+        }
+
+        .eclaboussure {
+            position: fixed;
+            border-radius: 50%;
+            background: #c8171f;
+            z-index: 23; pointer-events: none;
+            animation: sautEclaboussure ease-out forwards;
+        }
+
+        @keyframes sautEclaboussure {
+            0%   { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(var(--jx), var(--jy)) scale(0.2); opacity: 0; }
+        }
+
+        #cercleMort {
+            position: fixed;
+            left: 50%; top: 50%;
+            width: 220px; height: 220px;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.55);
+            border: 6px solid rgba(255, 255, 255, 0.22);
+            border-radius: 50%;
+            z-index: 30; opacity: 0;
+            display: flex; align-items: center; justify-content: center;
+            padding: 0; pointer-events: none;
+        }
+
+        #cercleMort .contenu {
+            position: absolute; inset: 0;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        #cercleMort.tombe {
+            opacity: 1;
+            animation: chuteCercle 0.85s cubic-bezier(0.45, 0, 0.7, 0.55) forwards;
+        }
+
+        @keyframes chuteCercle {
+            0%   { transform: translate(-50%, -50%) translateY(-120vh); }
+            74%  { transform: translate(-50%, -50%) translateY(10px); }
+            88%  { transform: translate(-50%, -50%) translateY(-6px); }
+            100% { transform: translate(-50%, -50%) translateY(0); }
+        }
+
+        #craneMort {
+            width: 200px; height: 200px;
+            flex: 0 0 auto;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        #craneMort svg { width: 200px; height: 200px; display: block; }
+
+        #craneMort .crane-tombant {
+            display: block; line-height: 0;
+            animation: chuteCrane 0.8s cubic-bezier(0.42, 0, 0.68, 0.5) forwards;
+        }
+
+        @keyframes chuteCrane {
+            0%   { transform: translateY(-150vh) rotate(-170deg) scale(0.65); opacity: 0; }
+            14%  { opacity: 1; }
+            72%  { transform: translateY(12px) rotate(7deg) scale(1.12, 0.86); }
+            87%  { transform: translateY(-7px) rotate(-4deg) scale(0.94, 1.07); }
+            100% { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+        }
+
+        #texteMort {
+            position: fixed;
+            left: 0; right: 0;
+            top: calc(50% + 145px);
+            z-index: 31;
+            text-align: center;
+            font-family: 'Bangers', cursive;
+            font-size: clamp(30px, 6vw, 68px);
+            letter-spacing: 5px;
+            color: #ffffff;
+            text-shadow: 4px 4px 0 #5a0008;
+            opacity: 0; pointer-events: none;
+        }
+
+        #texteMort.apparait { animation: fonduTexte 1.5s ease forwards; }
+
+        @keyframes fonduTexte {
+            0%   { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        .goutteLettre {
+            position: absolute;
+            top: 100%;
+            width: 9px; height: 15px;
+            background: #b3121b;
+            border-radius: 50% 50% 60% 60%;
+            animation: goutteTombe 1.6s ease-in forwards;
+        }
+
+        @keyframes goutteTombe {
+            0%   { opacity: 0; transform: translateY(-12px) scaleY(0.6); }
+            30%  { opacity: 1; transform: translateY(0) scaleY(1); }
+            100% { opacity: 0; transform: translateY(50px) scaleY(1.6); }
+        }
+
+        /* FONDU FINAL */
+        #fondu {
+            position: fixed; inset: 0;
+            background: #000;
+            z-index: 100; opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.9s ease;
+        }
+        #fondu.noir { opacity: 1; }
+
+        /* Écran noir au tout début */
+        #ecranNoir {
+            position: fixed; inset: 0;
+            background: #000;
+            z-index: 60;
+            transition: opacity 0.9s ease;
+        }
+        #ecranNoir.parti { opacity: 0; pointer-events: none; }
+    </style>
+</head>
+<body>
+
+    <div id="ecranNoir"></div>
+
+    <div id="cadre">
+    <div id="scene">
+
+        <!-- Le couloir -->
+        <div class="mur"></div>
+        <div class="plinthe"></div>
+        <div class="sol"></div>
+
+        <!-- Lignes de vitesse -->
+        <div id="lignesVitesse"></div>
+
+        <!-- Le feu qui rattrape -->
+        <div id="feuDerriere"></div>
+
+        <!-- L'ascenseur (apparaît si on gagne) -->
+        <div id="ascenseur">
+            <div class="fondCabine"></div>
+            <div class="lampe"></div>
+            <div class="porte porte-g"></div>
+            <div class="porte porte-d"></div>
+        </div>
+
+        <!-- Le coureur -->
+        <div class="stickman" id="coureur" style="left:900px; bottom:260px;">
+            <div class="tete"></div>
+            <div class="corps"></div>
+            <div class="bras bras-g"></div>
+            <div class="bras bras-d"></div>
+            <div class="jambe jambe-g"></div>
+            <div class="jambe jambe-d"></div>
+        </div>
+
+        <!-- HUD -->
+        <div id="chrono">00:30</div>
+        <div id="consigne">APPUYEZ SUR ESPACE LE PLUS VITE POSSIBLE !!!!!</div>
+        <div id="barre">
+            <div id="remplissage"></div>
+        </div>
+
+        <!-- La touche ESPACE : elle s'enfonce 2 fois par seconde -->
+        <div id="toucheEspace">
+            <div class="touche">
+                <span class="touche-libelle">ESPACE</span>
+            </div>
+        </div>
+
+    </div>
+    </div>
+
+    <!-- Scène de mort -->
+    <div id="sangMasse"></div>
+    <div id="bordSang"></div>
+    <div id="cercleMort">
+        <div class="contenu">
+            <span id="craneMort"></span>
+        </div>
+    </div>
+    <div id="texteMort">VOUS ETES MORT</div>
+
+    <div id="fondu"></div>
+
+    <script>
+        const scene      = document.getElementById('scene');
+        const ecranNoir  = document.getElementById('ecranNoir');
+        const coureur    = document.getElementById('coureur');
+        const feuDerriere= document.getElementById('feuDerriere');
+        const chrono     = document.getElementById('chrono');
+        const barre      = document.getElementById('barre');
+        const remplissage= document.getElementById('remplissage');
+        const ascenseur  = document.getElementById('ascenseur');
+        /* ATTENTION : la constante s'appelle bien "fondu" (sans s).
+           Avant c'était "fondus" alors que le code utilisait "fondu",
+           ce qui provoquait une ReferenceError sur la scène de mort. */
+        const fondu      = document.getElementById('fondu');
+
+        const porteG     = document.querySelector('.porte-g');
+        const porteD     = document.querySelector('.porte-d');
+        const conteneurVitesse = document.getElementById('lignesVitesse');
+
+        const masse      = document.getElementById('sangMasse');
+        const bordSang   = document.getElementById('bordSang');
+        const cercleMort = document.getElementById('cercleMort');
+        const craneMort  = document.getElementById('craneMort');
+        const texteMort  = document.getElementById('texteMort');
+
+        const ATTENTE = ms => new Promise(r => setTimeout(r, ms));
+
+        /* ---------- Mise à l'échelle ---------- */
+        function mettreAEchelle() {
+            const k = Math.min(window.innerWidth / 1600, window.innerHeight / 900);
+            document.documentElement.style.setProperty('--k', k);
+        }
+        window.addEventListener('resize', mettreAEchelle);
+        mettreAEchelle();
+
+        /* ---------- LE JEU ---------- */
+        const DUREE      = 30000;   // 30 secondes
+        const CLICS_MAX  = 100;     // 100 clics pour remplir la barre
+        const POS_JOUEUR = 900;     // position X de départ du coureur
+        const FEU_DEPART = -700;    // le feu commence très à gauche
+
+        /* Le coureur s'éloigne du feu à chaque clic, mais il ne peut
+           jamais s'éloigner durablement : dès qu'on arrête de cliquer,
+           il ralentit puis RECULE vers le feu.
+           La scène fait 1600px de large. */
+        const X_DEPART     = POS_JOUEUR;   // 900px : sa position de départ
+        const X_FIN        = 1140;          // 1140px : devant la porte de l'ascenseur
+        const X_PORTE_ASCENSEUR = 1140;     // où il s'arrête devant la porte
+        const PAS_AVANCE   = 20;            // px gagnés par clic (nerfé)
+        const MS_PAR_STEP  = 110;           // durée d'un pas en avant
+        const MS_GRACE     = 500;           // délai avant de commencer à reculer
+        const MS_PAR_RECUL = 200;           // temps pour perdre 1 PAS de terrain
+        const VITESSE_FEU  = 54;            // px par seconde : le feu rattrape
+
+        let clics      = 0;
+        let tempsEcoule = 0;
+        let enCours    = false;
+        let termine    = false;
+        let finPartie  = false;             // évite les fins en double
+        let decorDefile = 0;
+
+        /* Position réelle du coureur + quand on a cliqué pour la
+           dernière fois (sert au recul automatique). */
+        let xCourant    = X_DEPART;
+        let dernierClic = 0;
+
+        /* ---------- Le couloir défile ----------
+           Le décalage est piloté par la boucle : plus le joueur
+           clique vite, plus decorDefile augmente. */
+        function animerDecor() {
+            const mur = document.querySelector('.mur');
+            const sol = document.querySelector('.sol');
+            console.log('animerDecor:', { decorDefile, mur: !!mur, sol: !!sol });
+            if (mur) mur.style.backgroundPosition = (-decorDefile) + 'px 0';
+            if (sol) sol.style.backgroundPosition = (-decorDefile * 1.4) + 'px 0';
+        }
+
+        /* ---------- Lignes de vitesse ---------- */
+        function creerLignesVitesse() {
+            const conteneur = document.getElementById('lignesVitesse');
+            for (let i = 0; i < 16; i++) {
+                const l = document.createElement('div');
+                l.className = 'ligneVitesse';
+                l.style.top = (80 + Math.random() * 480).toFixed(0) + 'px';
+                l.style.left = (1650 + Math.random() * 400) + 'px';
+                l.style.width = (70 + Math.random() * 160).toFixed(0) + 'px';
+                l.style.animationDuration = (0.5 + Math.random() * 0.5).toFixed(2) + 's';
+                l.style.animationDelay = (-Math.random() * 1.2).toFixed(2) + 's';
+                conteneur.appendChild(l);
+            }
+        }
+
+        /* ---------- LE FEU (flat cartoon) ----------
+           Des langues de feu en SVG, pleines, sans dégradé ni flou,
+           disposées en 3 couches : jaune → orange → rouge.
+           Chacune ondule avec son propre délai. */
+
+        /* 4 formes de langue. Elles partent toutes de la même base
+           (50,220) et vont vers le haut en se terminant en pointe
+           qui s'incurve. */
+        const FORMES_LANGUE = [
+            // pointe qui courbe vers la droite
+            'M50 220 C25 215 10 190 16 165 C21 143 44 137 46 110 ' +
+            'C48 86 30 74 35 50 C48 66 63 63 67 42 C71 22 62 10 63 2 ' +
+            'C88 24 98 56 91 88 C86 112 65 122 67 146 C69 166 92 162 94 186 ' +
+            'C96 205 76 220 50 220 Z',
+
+            // version plus élancée, deux bosses
+            'M50 220 C20 212 6 184 14 156 C22 130 48 126 50 96 ' +
+            'C52 70 28 60 32 32 C46 50 68 48 72 26 C76 8 66 0 68 -8 ' +
+            'C94 16 102 52 94 84 C88 108 62 116 64 142 ' +
+            'C66 164 94 160 96 186 C98 206 74 220 50 220 Z',
+
+            // version courte et large, pointe écrasée
+            'M50 220 C18 218 2 196 8 172 C14 150 42 146 46 122 ' +
+            'C50 100 32 92 34 66 C36 46 58 44 66 30 C74 16 70 6 72 -4 ' +
+            'C98 14 108 46 100 78 C94 104 68 112 70 140 ' +
+            'C72 164 100 164 102 190 C104 208 76 220 50 220 Z',
+
+            // version asymétrique, très ondulée
+            'M50 220 C28 218 12 192 20 168 C28 144 50 140 50 112 ' +
+            'C50 88 26 78 30 50 C33 28 58 34 68 22 C80 8 74 0 78 -12 ' +
+            'C100 8 106 48 96 82 C88 108 60 118 62 144 ' +
+            'C64 168 88 166 90 190 C92 208 74 220 50 220 Z'
+        ];
+
+        function creerLangue(couleur, gauche, largeur, hauteur, duree, delai) {
+            const langue = document.createElement('div');
+            langue.className = 'langue ' + couleur;
+
+            langue.style.left = gauche + 'px';
+            langue.style.width = largeur + 'px';
+            langue.style.height = hauteur + 'px';
+
+            const forme = FORMES_LANGUE[Math.floor(Math.random() * FORMES_LANGUE.length)];
+
+            langue.innerHTML =
+                '<svg viewBox="-10 -20 120 250" preserveAspectRatio="none">' +
+                '<path d="' + forme + '"/>' +
+                '</svg>';
+
+            langue.style.animation = 'onduleLangue ' + duree + 's ease-in-out ' + delai + 's infinite';
+
+            return langue;
+        }
+
+        /* ---------- Le feu ----------
+           4 couches de langues qui se chevauchent sur TOUTE la largeur
+           du conteneur (760px) et sur toute la hauteur, pour qu'il
+           n'y ait jamais de trou vide derrière. */
+        function creerFeu() {
+            const conteneur = document.getElementById('feuDerriere');
+
+            /* --- la lueur chaude tout à l'arrière --- */
+            const lueur = document.createElement('div');
+            lueur.className = 'lueurFeu';
+            conteneur.appendChild(lueur);
+
+            /* --- couche 0 : rouge foncé, la profondeur du feu ---
+               24 langues très hautes, espacées de 34px : elles
+               débordent largement les unes sur les autres
+               (largeur ~230px) donc aucun trou ne peut se former,
+               même tout à l'arrière du mur de feu. */
+            for (let i = 0; i < 24; i++) {
+                const h = 640 + Math.random() * 420;
+                conteneur.appendChild(creerLangue(
+                    'rougeFonce',
+                    -180 + i * 34,
+                    210 + Math.random() * 80,
+                    h,
+                    (0.9 + Math.random() * 0.6).toFixed(2),
+                    (-Math.random() * 1.8).toFixed(2)
+                ));
+            }
+
+            /* --- couche 1 : jaune, la masse profonde --- */
+            for (let i = 0; i < 15; i++) {
+                const h = 520 + Math.random() * 420;
+                conteneur.appendChild(creerLangue(
+                    'jaune',
+                    -140 + i * 54,
+                    185 + Math.random() * 95,
+                    h,
+                    (0.62 + Math.random() * 0.5).toFixed(2),
+                    (-Math.random() * 1.4).toFixed(2)
+                ));
+            }
+
+            /* --- couche 2 : orange, le milieu --- */
+            for (let i = 0; i < 14; i++) {
+                const h = 440 + Math.random() * 400;
+                conteneur.appendChild(creerLangue(
+                    'orange',
+                    -80 + i * 56,
+                    180 + Math.random() * 105,
+                    h,
+                    (0.5 + Math.random() * 0.42).toFixed(2),
+                    (-Math.random() * 1.1).toFixed(2)
+                ));
+            }
+
+            /* --- couche 3 : rouge, le devant qui avance --- */
+            for (let i = 0; i < 12; i++) {
+                const h = 320 + Math.random() * 430;
+                conteneur.appendChild(creerLangue(
+                    'rouge',
+                    -30 + i * 60,
+                    170 + Math.random() * 115,
+                    h,
+                    (0.4 + Math.random() * 0.36).toFixed(2),
+                    (-Math.random() * 0.9).toFixed(2)
+                ));
+            }
+
+            /* --- les bulles rondes qui montent --- */
+            for (let i = 0; i < 22; i++) {
+                const b = document.createElement('div');
+                b.className = 'bulleFeu';
+                const taille = 14 + Math.random() * 36;
+                b.style.width = b.style.height = taille.toFixed(0) + 'px';
+
+                const teinte = ['#FFC800', '#FF8A00', '#F4511E'][Math.floor(Math.random() * 3)];
+                b.style.background = teinte;
+
+                b.style.left = (Math.random() * 100).toFixed(0) + '%';
+                b.style.bottom = (Math.random() * 560).toFixed(0) + 'px';
+                b.style.animationDuration = (1.3 + Math.random() * 1.6).toFixed(2) + 's';
+                b.style.animationDelay = (-Math.random() * 3).toFixed(2) + 's';
+                conteneur.appendChild(b);
+            }
+
+            /* --- les braises carrées --- */
+            for (let i = 0; i < 20; i++) {
+                const e = document.createElement('div');
+                e.className = 'braiseFeu';
+                const taille = 8 + Math.random() * 15;
+                e.style.width = e.style.height = taille.toFixed(0) + 'px';
+                e.style.background = ['#FF8A00', '#F4511E'][Math.floor(Math.random() * 2)];
+                e.style.left = (Math.random() * 100).toFixed(0) + '%';
+                e.style.bottom = (Math.random() * 700).toFixed(0) + 'px';
+                e.style.animationDuration = (1.4 + Math.random() * 1.4).toFixed(2) + 's';
+                e.style.animationDelay = (-Math.random() * 2.8).toFixed(2) + 's';
+                conteneur.appendChild(e);
+            }
+        }
+
+        /* ---------- Chrono ---------- */
+        function majChrono() {
+            const restant = Math.max(0, DUREE - tempsEcoule);
+            const sec = Math.ceil(restant / 1000);
+            const mm = Math.floor(sec / 60);
+            const ss = sec % 60;
+            chrono.textContent = '00:' + (ss < 10 ? '0' : '') + ss;
+
+            // devient rouge et pulse quand il reste peu de temps
+            if (restant <= 8000) chrono.classList.add('urgent');
+            else chrono.classList.remove('urgent');
+        }
+
+        /* ---------- Faire avancer le coureur ----------
+           Chaque clic lui donne un petit gain de terrain (PAS_AVANCE).
+           Il ne peut jamais dépasser X_FIN. */
+        function avancerCoureur(maintenant) {
+            xCourant = Math.min(X_FIN, xCourant + PAS_AVANCE);
+            dernierClic = maintenant;
+            coureur.style.transition = 'left ' + MS_PAR_STEP + 'ms ease-out';
+            coureur.style.left = xCourant + 'px';
+        }
+
+        /* ---------- Le recul quand on ne clique plus ----------
+           Après MS_GRACE sans clic, le coureur perd du terrain
+           progressivement : il ralentit puis revient vers le feu. */
+        function reculerCoureur(maintenant) {
+            if (xCourant <= X_DEPART) return;
+
+            const tempsSansClic = maintenant - dernierClic;
+            if (tempsSansClic <= MS_GRACE) return;
+
+            // On convertit le temps d'inactivité en nombre de "pas perdus"
+            const tempsUtile = tempsSansClic - MS_GRACE;
+            const pasPerdus = (tempsUtile / MS_PAR_RECUL) * PAS_AVANCE;
+
+            const xAvant = xCourant;
+            xCourant = Math.max(X_DEPART, xCourant - pasPerdus);
+
+            // On n'écrit la position que si ça bouge vraiment
+            if (Math.abs(xAvant - xCourant) > 0.1) {
+                coureur.style.transition = 'none';
+                coureur.style.left = xCourant + 'px';
+            }
+        }
+
+        /* ---------- Un clic sur espace ---------- */
+        function onEspace(e) {
+            if (e.code !== 'Space') return;
+            e.preventDefault();
+            if (!enCours || termine) return;
+
+            clics++;
+            const pct = (clics / CLICS_MAX) * 100;
+            remplissage.style.width = Math.min(100, pct) + '%';
+
+            // la petite ligne blanche qui marque le niveau atteint
+            const ligne = document.createElement('div');
+            ligne.className = 'ligneClic';
+            ligne.style.left = Math.min(100, pct) + '%';
+            barre.appendChild(ligne);
+            setTimeout(() => ligne.remove(), 500);
+
+            // le coureur avance un peu plus loin du feu
+            avancerCoureur(performance.now());
+
+            if (clics >= CLICS_MAX) gagner();
+        }
+
+        /* ---------- Victoire : il entre dans l'ascenseur ----------
+           1) l'ascenseur carré apparaît sur le mur du fond
+           2) il court jusqu'à la porte et s'y dissout (hologramme)
+           3) les portes se ferment
+           4) le feu continue d'avancer vers l'ascenseur
+           5) fondu au noir */
+        async function gagner() {
+            if (finPartie) return;
+            finPartie = true;
+            enCours = false;
+
+            coureur.style.transition = '';
+
+            // L'UI s'efface pendant la fin
+            const ui = [chrono, document.getElementById('consigne'), barre,
+                        document.getElementById('toucheEspace')];
+            ui.forEach(function (el) {
+                el.style.transition = 'opacity 0.35s ease';
+                el.style.opacity = '0';
+            });
+
+            // 1) L'ascenseur apparaît sur le mur - portes OUVERTES par défaut
+            ascenseur.classList.add('visible');
+            // Assurer que les portes sont ouvertes
+            porteG.classList.remove('ferme');
+            porteD.classList.remove('ferme');
+
+            await ATTENTE(1100);
+
+            /* 2) Il court jusqu'à la porte (animation de course
+                   maintenue jusqu'au bout). */
+            while (true) {
+                const x = parseFloat(coureur.style.left) || xCourant;
+                if (x >= X_PORTE_ASCENSEUR) break;
+                coureur.style.left = Math.min(X_PORTE_ASCENSEUR, x + 12) + 'px';
+                await ATTENTE(16);
+            }
+
+            // il s'arrête net devant la porte
+            coureur.classList.remove('court');
+
+            /* Puis il s'enfonce dans la cabine en se dissolvant
+               slowly, comme un hologramme qui s'éteint. */
+            coureur.classList.add('hologramme');
+            coureur.style.left = (X_PORTE_ASCENSEUR + 100) + 'px';
+
+            await ATTENTE(1600);
+
+            // 3) Les portes se ferment derrière lui
+            porteG.classList.add('ferme');
+            porteD.classList.add('ferme');
+
+            await ATTENTE(1500);
+
+            /* 4) Le feu continue d'avancer tout seul vers l'ascenseur. */
+            let t = 0;
+            while (t < 2600) {
+                await ATTENTE(50);
+                t += 50;
+                feuOffset += (50 / 1000) * VITESSE_FEU;
+                feuDerriere.style.left = (FEU_DEPART + feuOffset) + 'px';
+            }
+
+            // 5) Fondu au noir puis l'ascenseur
+            fondu.classList.add('noir');
+            await ATTENTE(1400);
+
+            window.location.href = 'ascenseur-page.html';
+        }
+
+        /* ---------- Défaite : le feu rattrape le coureur ---------- */
+        async function perdre() {
+            if (termine) return;
+            termine = true;
+            enCours = false;
+
+            coureur.classList.remove('court');
+
+            // le feu rattrape le coureur
+            feuDerriere.style.transition = 'left 0.9s ease-in';
+            feuDerriere.style.left = '520px';
+            await ATTENTE(1100);
+
+            // le coureur tombe
+            coureur.style.transition = 'transform 0.5s ease-in, opacity 0.5s';
+            coureur.style.transform = 'rotate(-80deg)';
+            coureur.style.opacity = '0.2';
+            await ATTENTE(800);
+
+            // on masque le couloir
+            scene.style.transition = 'opacity 0.6s ease';
+            scene.style.opacity = '0';
+            await ATTENTE(700);
+
+            // la scène de sang, au milieu de la course
+            await sceneMort();
+
+            window.location.href = 'course-graveyard.html';
+        }
+
+        /* ---------- Scène de mort (sang) ---------- */
+        function construireBordSang() {
+            const L = 1000, H = 300, base = 12;
+            let d = `M 0 0 L ${L} 0 L ${L} ${base}`;
+            let x = L;
+            const gouttes = 13;
+            for (let i = 0; i < gouttes; i++) {
+                const largeur = L / gouttes;
+                const x1 = x, x2 = x - largeur;
+                const profondeur = 26 + Math.random() * 150;
+                const cx = (x1 + x2) / 2 + (Math.random() * 26 - 13);
+                d += ` Q ${cx} ${base + profondeur * 2.2} ${x2} ${base + (profondeur * 0.18)}`;
+                x = x2;
+            }
+            d += ` L 0 ${base} Z`;
+            bordSang.innerHTML =
+                `<svg viewBox="0 0 ${L} ${H}" preserveAspectRatio="none"><path d="${d}" fill="#b3121b"/></svg>`;
+        }
+
+        function remplirDeSang(dureeMs) {
+            construireBordSang();
+            masse.style.opacity = '1';
+            bordSang.style.opacity = '1';
+
+            const debut = performance.now();
+            let bulles = 0;
+
+            function animer(now) {
+                const t = Math.min(1, (now - debut) / dureeMs);
+                const p = 1 - Math.pow(1 - t, 2);
+                const niveau = p * 100;
+                masse.style.height = niveau + 'vh';
+                bordSang.style.top = niveau + 'vh';
+                if (niveau > 10 && bulles < 30) { bulles++; creerBulle(niveau); }
+                if (t > 0.97) creerEclaboussures();
+                if (t < 1) requestAnimationFrame(animer);
+            }
+            requestAnimationFrame(animer);
+        }
+
+        function creerBulle(niveauVh) {
+            const b = document.createElement('div');
+            b.className = 'bulle';
+            const t = 8 + Math.random() * 20;
+            b.style.width = t + 'px'; b.style.height = t + 'px';
+            b.style.left = (Math.random() * 100).toFixed(1) + 'vw';
+            b.style.top = (Math.random() * niveauVh * 0.92).toFixed(1) + 'vh';
+            b.style.animationDuration = (1.4 + Math.random() * 1.6).toFixed(2) + 's';
+            document.body.appendChild(b);
+            setTimeout(() => b.remove(), 3200);
+        }
+
+        function creerEclaboussures() {
+            for (let i = 0; i < 12; i++) {
+                const e = document.createElement('div');
+                e.className = 'eclaboussure';
+                const t = 8 + Math.random() * 16;
+                e.style.width = t + 'px'; e.style.height = t + 'px';
+                e.style.left = (Math.random() * 100).toFixed(1) + 'vw';
+                e.style.bottom = '0';
+                e.style.setProperty('--jx', ((Math.random() - 0.5) * 220).toFixed(0) + 'px');
+                e.style.setProperty('--jy', (-80 - Math.random() * 200).toFixed(0) + 'px');
+                e.style.animationDuration = (0.7 + Math.random() * 0.7).toFixed(2) + 's';
+                document.body.appendChild(e);
+                setTimeout(() => e.remove(), 1600);
+            }
+        }
+
+        function creerGouttesLettres() {
+            for (let i = 0; i < 9; i++) {
+                const g = document.createElement('span');
+                g.className = 'goutteLettre';
+                g.style.left = (20 + i * 7.5 + Math.random() * 3).toFixed(1) + '%';
+                g.style.animationDelay = (Math.random() * 1.2).toFixed(2) + 's';
+                texteMort.appendChild(g);
+            }
+        }
+
+        const CRANE_SVG = `
+<svg viewBox="0 0 200 210" xmlns="http://www.w3.org/2000/svg">
+  <ellipse cx="100" cy="203" rx="62" ry="8" fill="rgba(0,0,0,0.28)"/>
+  <path d="M100 8 C48 8 20 42 20 92 C20 124 34 145 55 156 L55 186
+           C55 196 63 202 73 202 L127 202 C137 202 145 196 145 186 L145 156
+           C166 145 180 124 180 92 C180 42 152 8 100 8 Z"
+        fill="#f4f1e4" stroke="#141414" stroke-width="7" stroke-linejoin="round"/>
+  <path d="M78 26 L74 48" stroke="#c9c4b0" stroke-width="5" stroke-linecap="round"/>
+  <path d="M100 22 L100 46" stroke="#c9c4b0" stroke-width="5" stroke-linecap="round"/>
+  <path d="M122 26 L126 48" stroke="#c9c4b0" stroke-width="5" stroke-linecap="round"/>
+  <ellipse cx="67" cy="96" rx="23" ry="27" fill="#141414"/>
+  <ellipse cx="133" cy="96" rx="23" ry="27" fill="#141414"/>
+  <circle cx="60" cy="88" r="6" fill="rgba(255,255,255,0.22)"/>
+  <circle cx="126" cy="88" r="6" fill="rgba(255,255,255,0.22)"/>
+  <path d="M100 122 L86 152 L114 152 Z" fill="#141414" stroke="#141414" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M44 118 L56 126" stroke="#c9c4b0" stroke-width="5" stroke-linecap="round"/>
+  <path d="M156 118 L144 126" stroke="#c9c4b0" stroke-width="5" stroke-linecap="round"/>
+  <rect x="58" y="162" width="84" height="34" rx="7" fill="#f4f1e4" stroke="#141414" stroke-width="6"/>
+  <line x1="72" y1="164" x2="72" y2="194" stroke="#141414" stroke-width="4.5"/>
+  <line x1="86" y1="164" x2="86" y2="194" stroke="#141414" stroke-width="4.5"/>
+  <line x1="114" y1="164" x2="114" y2="194" stroke="#141414" stroke-width="4.5"/>
+  <line x1="128" y1="164" x2="128" y2="194" stroke="#141414" stroke-width="4.5"/>
+</svg>`;
+
+        async function sceneMort() {
+            remplirDeSang(2600);
+            await ATTENTE(2800);
+            cercleMort.classList.add('tombe');
+            await ATTENTE(900);
+            craneMort.innerHTML = '<span class="crane-tombant">' + CRANE_SVG + '</span>';
+            await ATTENTE(850);
+            creerGouttesLettres();
+            texteMort.classList.add('apparait');
+            await ATTENTE(2800);
+            fondu.classList.add('noir');
+            await ATTENTE(1300);
+        }
+
+        /* ---------- Boucle principale ---------- */
+        let dernierTemps = 0;
+        let decorOffset  = 0;      // décalage du décor qui défile
+        let feuOffset    = 0;      // distance parcourue par le feu
+        const VITESSE_MAX = 22;     // vitesse max du défilement
+
+        function boucle(temps) {
+            if (!enCours || finPartie) return;
+            const dt = temps - dernierTemps;
+            dernierTemps = temps;
+            tempsEcoule += dt;
+
+            /* 1) Le décor ne défile QUE si le joueur clique.
+                  On regarde son rythme de clics : s'il spamme,
+                  le couloir file à VITESSE_MAX ; sinon il se fige. */
+            const tempsSansClic = temps - dernierClic;
+            const enVitesse = tempsSansClic < 170;
+
+            // accélération instantanée, décélération douce
+            if (enVitesse) {
+                decorOffset = Math.min(decorOffset + 2.5, VITESSE_MAX);  // accélère
+            } else {
+                decorOffset *= 0.92;  // freine doucement
+            }
+            decorDefile += decorOffset;  // ACCUMULE le déplacement
+
+            console.log('boucle:', { enVitesse, decorOffset, decorDefile, dernierClic, temps, xCourant });
+
+            // les lignes de vitesse s'arrêtent quand on ne clique plus
+            conteneurVitesse.classList.toggle('ralenti', !enVitesse);
+
+            animerDecor();
+
+            // le coureur perd du terrain s'il ne clique plus
+            reculerCoureur(temps);
+
+            /* 2) Le feu avance TEMPS RÉELLEMENT, toujours vers la
+                  position de départ : c'est lui qui crée la tension. */
+            feuOffset += (dt / 1000) * VITESSE_FEU;
+            feuDerriere.style.left = (FEU_DEPART + feuOffset) + 'px';
+
+            majChrono();
+
+            if (tempsEcoule >= DUREE) { perdre(); return; }
+
+            requestAnimationFrame(boucle);
+        }
+
+        /* ---------- DÉMARRAGE ---------- */
+        window.addEventListener('keydown', onEspace);
+
+        /* L'intro avant le vrai début du jeu */
+        const X_ARRIVEE = -190;   // le coureur arrive par la gauche (côté du feu)
+
+        /* Fait VRAIMENT courir le coureur de sa position vers xCible.
+           Sans cette animation il resterait figé hors champ puis
+           apparaîtrait d'un coup au milieu de l'écran. */
+        async function courirVers(xCible, dureeMs) {
+            const xDebut = xCourant;
+            const debut = performance.now();
+
+            coureur.classList.add('court');
+
+            while (true) {
+                const t = performance.now() - debut;
+                const p = Math.min(1, t / dureeMs);
+                // léger easing : il accélère en arrivant
+                const e = 1 - Math.pow(1 - p, 2);
+
+                xCourant = xDebut + (xCible - xDebut) * e;
+                coureur.style.left = xCourant + 'px';
+
+                if (p >= 1) break;
+                await ATTENTE(16);
+            }
+
+            xCourant = xCible;
+            coureur.style.left = xCourant + 'px';
+        }
+
+        async function intro() {
+            /* 1) Le coureur attend hors champ, à gauche, du côté du feu */
+            xCourant = X_ARRIVEE;
+            coureur.style.left = xCourant + 'px';
+
+            await ATTENTE(400);
+            ecranNoir.classList.add('parti');   // on découvre la scène
+
+            /* 2) Il ENTRE EN COURSANT jusqu'au milieu de l'écran... */
+            await courirVers(X_DEPART, 1800);
+
+            /* ...puis il S'ARRÊTE une fois arrivé */
+            coureur.classList.remove('court');
+
+            await ATTENTE(400);
+
+            /* 3) Le feu apparaît et il REPART EN COURSANT */
+            feuDerriere.classList.add('apparu');
+            coureur.classList.add('court');
+
+            await ATTENTE(850);
+
+            /* 4) L'UI tombe en place, décalée pour un effet de cascade */
+            const ui = [chrono, document.getElementById('consigne'), barre,
+                        document.getElementById('toucheEspace')];
+            ui.forEach(function (el, i) {
+                setTimeout(function () { el.classList.add('tombe'); }, i * 140);
+            });
+
+            await ATTENTE(1400);
+
+            /* 5) On retire l'animation de chute mais on garde l'UI
+               visible : sans ça #chrono.urgent ne pourrait plus
+               prendre le relais pour l'alarme des 8 dernières secondes. */
+            ui.forEach(function (el) {
+                el.style.opacity = '1';
+                el.classList.remove('tombe');
+            });
+
+            /* 6) La course commence : il REPREND sa course, le couloir
+               défile et le feu se met à le rattraper */
+            coureur.classList.add('court');
+            enCours = true;
+            dernierTemps = performance.now();
+            dernierClic = dernierTemps;
+            requestAnimationFrame(boucle);
+        }
+
+        window.addEventListener('load', function () {
+            creerLignesVitesse();
+            creerFeu();
+            intro();
+        });
+    </script>
+
+</body>
+</html>

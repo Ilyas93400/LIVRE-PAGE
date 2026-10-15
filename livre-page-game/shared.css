@@ -1,0 +1,467 @@
+/* Shared Styles */
+@import url('https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Bangers', cursive;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+}
+
+/* ==========================================================
+   LE SITE NE DÉFILE JAMAIS
+   Cette règle est mise en dernier et en !important pour
+   passer au-dessus des <style> de chaque page (qui ont
+   leur propre overflow-y: auto).
+   ========================================================== */
+html,
+body {
+    overflow: hidden !important;
+}
+
+/* Fire Particle Styles */
+.fire-particle {
+    position: fixed;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #FFD700, #FF4500, #8B0000);
+    animation: rise 3s ease-out infinite;
+    opacity: 0.8;
+    z-index: 1;
+}
+
+@keyframes rise {
+    0% {
+        transform: translateY(100vh) scale(1);
+        opacity: 0.8;
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-100px) scale(0);
+        opacity: 0;
+    }
+}
+
+/* Smoke Styles */
+.smoke-particle {
+    position: fixed;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: rgba(100, 100, 100, 0.3);
+    animation: smokeRise 4s ease-out infinite;
+    z-index: 1;
+}
+
+@keyframes smokeRise {
+    0% {
+        transform: translateY(100vh) scale(0.5);
+        opacity: 0.3;
+    }
+    100% {
+        transform: translateY(-200px) scale(2);
+        opacity: 0;
+    }
+}
+
+/* Burn Button Effect */
+.burn-btn {
+    position: relative;
+    overflow: visible;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.burn-btn:disabled {
+    cursor: default;
+}
+
+/* Zone de carbonisation : front de feu qui traverse le bouton comme du papier.
+   - coin supérieur gauche : bords brun/orange enflammés qui avancent
+   - derrière : carbonisation noire
+   - après la brûlure : les cendres s'envolent (ashFade) */
+.scorch {
+    position: absolute;
+    inset: -6px;
+    border-radius: 26px;
+    pointer-events: none;
+    background: radial-gradient(circle at -6% -12%,
+        rgba(255, 244, 200, 0)   0%,
+        rgba(255, 244, 200, 0)   50%,
+        rgba(255, 158, 28, 0.9)  54%,
+        rgba(180, 66, 4, 0.95)   57%,
+        rgba(70, 25, 10, 1)      60%,
+        rgba(35, 14, 6, 1)       63%,
+        rgba(15, 7, 4, 0.98)     67%,
+        rgba(10, 5, 3, 0.96)     100%);
+    background-size: 300% 300%;
+    background-position: 0% 0%;
+}
+
+/* Progression de la brûlure (démarrée par .burning en JS) */
+@keyframes burnAway {
+    from { background-position: 0% 0%; }
+    to   { background-position: 100% 100%; }
+}
+
+.burn-btn.burning .scorch {
+    animation: burnAway 1.3s ease-in forwards,
+               ashFade 0.45s ease-out 1.05s forwards;
+}
+
+/* Les cendres disparaissent */
+@keyframes ashFade {
+    to { opacity: 0; }
+}
+
+/* Braises (petites boules incandescentes) */
+.ember {
+    position: fixed;
+    z-index: 15;
+    border-radius: 50%;
+    pointer-events: none;
+    background: radial-gradient(circle, #fff6c9 0%, #ffd140 35%, #ff7a00 70%, rgba(255, 40, 0, 0) 100%);
+    animation: emberFly var(--duree, 0.85s) ease-out forwards;
+}
+
+/* Flammèches (petites flammes sur le front de brûlure) */
+.spark {
+    position: fixed;
+    z-index: 16;
+    font-size: 20px;
+    pointer-events: none;
+    filter: drop-shadow(0 0 6px rgba(255, 120, 0, 0.9));
+    animation: sparkFlare var(--duree, 0.6s) ease-out forwards;
+}
+
+@keyframes emberFly {
+    0%   { transform: translate(0, 0) scale(1);      opacity: 1; }
+    60%  { opacity: 1; }
+    100% { transform: translate(var(--dx, 6px), var(--dy, -70px)) scale(0.2); opacity: 0; }
+}
+
+@keyframes sparkFlare {
+    0%   { transform: translate(-50%, 0) scale(0.4) rotate(0deg);       opacity: 0; }
+    25%  { transform: translate(-50%, -14px) scale(1.2) rotate(8deg);   opacity: 1; }
+    70%  { opacity: 1; }
+    100% { transform: translate(-50%, -46px) scale(0.3) rotate(-6deg);  opacity: 0; }
+}
+
+/* Screen Transition */
+.screen-transition {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2000;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.5s;
+}
+
+.screen-transition.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.screen-transition.black {
+    background: #000;
+}
+
+.screen-transition.blue {
+    background: #87CEEB;
+}
+
+.screen-transition.red {
+    background: #8B0000;
+}
+
+.screen-transition.orange {
+    background: #ff9f1c;
+}
+
+/* Fire Title Effect */
+.fire-title {
+    color: white;
+    text-shadow: 
+        0 0 10px #FF4500,
+        0 0 20px #FF4500,
+        0 0 40px #FF6347,
+        0 0 80px #FF0000,
+        0 0 120px #8B0000;
+    animation: flicker 0.5s infinite alternate;
+}
+
+@keyframes flicker {
+    0% { text-shadow: 0 0 10px #FF4500, 0 0 20px #FF4500, 0 0 40px #FF6347, 0 0 80px #FF0000; }
+    100% { text-shadow: 0 0 15px #FF4500, 0 0 30px #FF4500, 0 0 60px #FF6347, 0 0 100px #FF0000, 0 0 150px #8B0000; }
+}
+
+/* Cloud Styles */
+.cloud {
+    position: fixed;
+    background: white;
+    border-radius: 50px;
+    opacity: 0.8;
+    animation: floatCloud 30s linear infinite;
+}
+
+.cloud::before, .cloud::after {
+    content: '';
+    position: absolute;
+    background: white;
+    border-radius: 50%;
+}
+
+.cloud::before {
+    width: 50%;
+    height: 100%;
+    top: -40%;
+    left: 15%;
+}
+
+.cloud::after {
+    width: 40%;
+    height: 80%;
+    top: -30%;
+    right: 15%;
+}
+
+@keyframes floatCloud {
+    0% { transform: translateX(-200px); }
+    100% { transform: translateX(calc(100vw + 200px)); }
+}
+
+/* Bird Styles */
+.bird {
+    position: fixed;
+    font-size: 20px;
+    left: 0;
+    animation: flyBird 25s linear infinite;
+    z-index: 1;
+}
+
+.bird-wing-left {
+    transform-origin: 20px 10px;
+    animation: flapWings 0.5s ease-in-out infinite alternate;
+}
+
+.bird-wing-right {
+    transform-origin: 20px 10px;
+    animation: flapWings 0.5s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes flapWings {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(-24deg); }
+}
+
+@keyframes flyBird {
+    0% { transform: translateX(-50px) translateY(0); }
+    25% { transform: translateX(25vw) translateY(-20px); }
+    50% { transform: translateX(50vw) translateY(10px); }
+    75% { transform: translateX(75vw) translateY(-15px); }
+    100% { transform: translateX(calc(100vw + 50px)) translateY(0); }
+}
+
+/* Plane Styles */
+.plane {
+    position: fixed;
+    font-size: 30px;
+    left: 0;
+    animation: flyPlane 35s linear infinite;
+    z-index: 1;
+}
+
+@keyframes flyPlane {
+    0% { transform: translateX(-100px) translateY(0); }
+    50% { transform: translateX(50vw) translateY(-30px); }
+    100% { transform: translateX(calc(100vw + 100px)) translateY(0); }
+}
+
+/* Choice Button Styles */
+.choice-btn {
+    background: #1a237e;
+    color: white;
+    font-family: 'Bangers', cursive;
+    font-size: 24px;
+    padding: 15px 40px;
+    border: 3px solid #0d1754;
+    border-radius: 15px;
+    cursor: pointer;
+    margin: 10px;
+    transition: all 0.3s;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.choice-btn:hover {
+    background: #283593;
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(255,255,255,0.3),
+                0 0 14px rgba(255, 40, 40, 0.75),
+                0 0 34px rgba(255, 0, 0, 0.45);
+}
+
+/* Box Styles */
+.story-box {
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 20px;
+    padding: 30px;
+    margin: 20px;
+    min-height: 400px;
+    flex: 1;
+}
+
+.image-placeholder {
+    width: 100%;
+    height: 300px;
+    background: rgba(255,255,255,0.1);
+    border: 3px dashed rgba(255,255,255,0.5);
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255,255,255,0.7);
+    font-size: 20px;
+}
+
+/* ==========================================================
+   ANIMATION DE SANG (MORT) - PARTAGÉE
+   ========================================================== */
+
+#sangMasse {
+    position: fixed; top: 0; left: 0;
+    width: 100%; height: 0;
+    background: #b3121b;
+    z-index: 200; pointer-events: none; opacity: 0;
+}
+
+#bordSang {
+    position: fixed; top: 0; left: 0;
+    width: 100%; height: 300px;
+    margin-top: -276px;
+    z-index: 201; pointer-events: none; opacity: 0;
+}
+
+#bordSang svg { width: 100%; height: 100%; display: block; overflow: visible; }
+
+.bulle {
+    position: fixed;
+    border-radius: 50%;
+    background: rgba(255, 120, 120, 0.45);
+    border: 3px solid rgba(90, 10, 16, 0.45);
+    z-index: 202; pointer-events: none;
+    animation: remonteBulle linear forwards;
+}
+
+@keyframes remonteBulle {
+    0%   { transform: translateY(0) scale(0.4); opacity: 0; }
+    20%  { opacity: 0.9; }
+    100% { transform: translateY(-260px) scale(1.15); opacity: 0; }
+}
+
+.eclaboussure {
+    position: fixed;
+    border-radius: 50%;
+    background: #c8171f;
+    z-index: 203; pointer-events: none;
+    animation: sautEclaboussure ease-out forwards;
+}
+
+@keyframes sautEclaboussure {
+    0%   { transform: translate(0, 0) scale(1); opacity: 1; }
+    100% { transform: translate(var(--jx), var(--jy)) scale(0.2); opacity: 0; }
+}
+
+#cercleMort {
+    position: fixed;
+    left: 50%; top: 50%;
+    width: 220px; height: 220px;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.55);
+    border: 6px solid rgba(255, 255, 255, 0.22);
+    border-radius: 50%;
+    z-index: 210; opacity: 0;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0; pointer-events: none;
+}
+
+#cercleMort .contenu {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+}
+
+#cercleMort.tombe {
+    opacity: 1;
+    animation: chuteCercle 0.85s cubic-bezier(0.45, 0, 0.7, 0.55) forwards;
+}
+
+@keyframes chuteCercle {
+    0%   { transform: translate(-50%, -50%) translateY(-120vh); }
+    74%  { transform: translate(-50%, -50%) translateY(10px); }
+    88%  { transform: translate(-50%, -50%) translateY(-6px); }
+    100% { transform: translate(-50%, -50%) translateY(0); }
+}
+
+#craneMort {
+    width: 200px; height: 200px;
+    flex: 0 0 auto;
+    display: flex; align-items: center; justify-content: center;
+}
+
+#craneMort svg { width: 200px; height: 200px; display: block; }
+
+#craneMort .crane-tombant {
+    display: block; line-height: 0;
+    animation: chuteCrane 0.8s cubic-bezier(0.42, 0, 0.68, 0.5) forwards;
+}
+
+@keyframes chuteCrane {
+    0%   { transform: translateY(-150vh) rotate(-170deg) scale(0.65); opacity: 0; }
+    14%  { opacity: 1; }
+    72%  { transform: translateY(12px) rotate(7deg) scale(1.12, 0.86); }
+    87%  { transform: translateY(-7px) rotate(-4deg) scale(0.94, 1.07); }
+    100% { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+}
+
+#texteMort {
+    position: fixed;
+    left: 0; right: 0;
+    top: calc(50% + 145px);
+    z-index: 211;
+    text-align: center;
+    font-family: 'Bangers', cursive;
+    font-size: clamp(30px, 6vw, 68px);
+    letter-spacing: 5px;
+    color: #ffffff;
+    text-shadow: 4px 4px 0 #5a0008;
+    opacity: 0; pointer-events: none;
+}
+
+#texteMort.apparait { animation: fonduTexte 1.5s ease forwards; }
+
+@keyframes fonduTexte {
+    0%   { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+/* FONDU FINAL */
+#fonduMort {
+    position: fixed; inset: 0;
+    background: #000;
+    z-index: 300; opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.9s ease;
+}
+#fonduMort.noir { opacity: 1; }

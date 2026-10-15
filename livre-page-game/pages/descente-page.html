@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>L'appartement en feu - La descente</title>
+    <link rel="stylesheet" href="../shared.css">
+    <style>
+        body {
+            background: #000;
+            height: auto;
+            min-height: 100vh;
+            width: 100%;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        /* ==========================================================
+           LE PUITS / LA GORGE DE L'IMMEUBLE (vu après la chute)
+           ========================================================== */
+
+        /* ==========================================================
+           INTÉRIEUR DE LA CABINE D'ASCENSEUR
+           (mêmes éléments que ascenseur-page.html, mais
+           survolés par l'alarme rouge)
+           ========================================================== */
+
+        /* Les parois métalliques */
+        .parois {
+            position: fixed;
+            inset: 0;
+            background: #a9b0bd;
+            z-index: 0;
+        }
+
+        /* Panneaux verticaux (effet tôle) */
+        .parois::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image:
+                repeating-linear-gradient(90deg,
+                    rgba(255,255,255,0.10) 0 3px,
+                    transparent 3px 90px),
+                repeating-linear-gradient(90deg,
+                    rgba(0,0,0,0.10) 0 2px,
+                    transparent 2px 90px);
+            background-position: 0 0, 45px 0;
+        }
+
+        /* Le plafond */
+        .plafond {
+            position: fixed;
+            left: 0;
+            right: 0;
+            top: 0;
+            height: 90px;
+            background: #8d949f;
+            border-bottom: 5px solid #6f7681;
+            z-index: 1;
+        }
+
+        /* La lampe du plafond (qui vacille) */
+        .plafond .lampe {
+            position: absolute;
+            left: 50%;
+            bottom: 10px;
+            transform: translateX(-50%);
+            width: 340px;
+            height: 34px;
+            background: #fffbe6;
+            border: 5px solid #b8b39a;
+            border-radius: 20px;
+            box-shadow: 0 0 40px rgba(255, 250, 200, 0.75);
+            animation: vacille 3.4s ease-in-out infinite;
+        }
+
+        @keyframes vacille {
+            0%, 92%, 100% { opacity: 1; }
+            94%   { opacity: 0.25; }
+            96%   { opacity: 1; }
+            97%   { opacity: 0.35; }
+            99%   { opacity: 1; }
+        }
+
+        /* Le sol de la cabine */
+        .solAscenseur {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 240px;
+            background: #6f7681;
+            border-top: 5px solid #565c66;
+            z-index: 1;
+        }
+
+        .solAscenseur::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image:
+                repeating-linear-gradient(0deg,
+                    rgba(0,0,0,0.12) 0 3px,
+                    transparent 3px 70px);
+        }
+
+        /* La main courante */
+        .mainCourante {
+            position: fixed;
+            left: 4%;
+            right: 4%;
+            top: 300px;
+            height: 22px;
+            background: linear-gradient(180deg, #e8ecf2 0%, #aab1bd 60%, #7f8794 100%);
+            border-radius: 11px;
+            z-index: 2;
+            box-shadow: 0 6px 14px rgba(0,0,0,0.35);
+        }
+
+        /* L'ombre dans le couloir derrière la porte */
+        .ombres {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 240px;
+            height: 300px;
+            background: linear-gradient(to top, rgba(0,0,0,0.42), transparent);
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* L'afficheur d'étage */
+        .afficheur {
+            position: fixed;
+            left: 50%;
+            top: 120px;
+            transform: translateX(-50%);
+            padding: 10px 34px;
+            background: #1c1f24;
+            border: 6px solid #6f7681;
+            border-radius: 12px;
+            font-family: 'Bangers', cursive;
+            font-size: 54px;
+            letter-spacing: 8px;
+            color: #ff9f1c;
+            text-shadow: 0 0 18px rgba(255, 159, 28, 0.9);
+            z-index: 4;
+        }
+
+        /* Le panneau de boutons */
+        .panneau {
+            position: fixed;
+            right: 7%;
+            top: 300px;
+            width: 130px;
+            padding: 22px 14px;
+            background: #c3c9d4;
+            border: 6px solid #8a919e;
+            border-radius: 12px;
+            z-index: 3;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 18px;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.12);
+        }
+
+        .pastille {
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            border: 5px solid #6f7681;
+            background: #e8ecf2;
+        }
+
+        .pastille.allumee {
+            background: #ff2b2b;
+            box-shadow: 0 0 20px rgba(255, 43, 43, 0.85);
+        }
+
+        /* La poussière qui tombe encore dans la cabine */
+        .poussiere {
+            position: fixed;
+            border-radius: 50%;
+            background: rgba(150, 110, 110, 0.35);
+            z-index: 2;
+            pointer-events: none;
+            animation: tombePoussiere linear infinite;
+        }
+
+        @keyframes tombePoussiere {
+            0%   { transform: translateY(-10vh) scale(0.6); opacity: 0; }
+            12%  { opacity: 0.7; }
+            100% { transform: translateY(105vh) scale(1.2);  opacity: 0; }
+        }
+
+        /* ==========================================================
+           ALARME : la cabine tremble et vire au rouge
+           ========================================================== */
+        .alarme {
+            animation: trembleAlarme 0.09s infinite;
+        }
+
+        @keyframes trembleAlarme {
+            0%   { transform: translate(0, 0); }
+            25%  { transform: translate(3px, -2px); }
+            50%  { transform: translate(-3px, 2px); }
+            75%  { transform: translate(2px, 3px); }
+            100% { transform: translate(-2px, -3px); }
+        }
+
+        /* Voile rouge qui pulse comme une sirène */
+        #voixAlarme {
+            position: fixed;
+            inset: 0;
+            z-index: 6;
+            pointer-events: none;
+            background: radial-gradient(ellipse at 50% 50%,
+                rgba(255, 0, 0, 0) 25%,
+                rgba(255, 20, 20, 0.35) 70%,
+                rgba(255, 0, 0, 0.75) 100%);
+            animation: pulseAlarme 1s ease-in-out infinite;
+        }
+
+        @keyframes pulseAlarme {
+            0%, 100% { opacity: 0.35; }
+            50%      { opacity: 1; }
+        }
+
+        /* Lumières rouges qui balayent la cabine */
+        .tacheRouge {
+            position: fixed;
+            border-radius: 50%;
+            background: radial-gradient(circle,
+                rgba(255, 40, 40, 0.55) 0%,
+                rgba(255, 0, 0, 0.22) 45%,
+                rgba(255, 0, 0, 0) 75%);
+            z-index: 6;
+            pointer-events: none;
+            animation: balayeAlarme 1.6s ease-in-out infinite alternate;
+        }
+
+        @keyframes balayeAlarme {
+            0%   { transform: translateX(-40vw) scale(1);    opacity: 0.5; }
+            100% { transform: translateX(40vw) scale(1.25); opacity: 1; }
+        }
+
+        /* ==========================================================
+           TITRE
+           ========================================================== */
+        .site-header {
+            position: relative;
+            z-index: 5;
+            text-align: center;
+            padding: 18px 10px 6px;
+            font-size: 46px;
+            color: #ffffff;
+            letter-spacing: 3px;
+            text-shadow: 3px 3px 0 #0d2a16, 6px 6px 0 rgba(0,0,0,0.5);
+        }
+
+        /* ==========================================================
+           LES DEUX BOÎTES NOIRES TRANSPARENTES
+           ========================================================== */
+        .content-container {
+            position: relative;
+            z-index: 5;
+            display: flex;
+            justify-content: center;
+            align-items: stretch;
+            gap: 26px;
+            padding: 18px 26px 6px;
+        }
+
+        .story-box {
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 22px;
+            padding: 28px;
+            min-height: 380px;
+            flex: 1;
+            max-width: 640px;
+        }
+
+        .image-placeholder {
+            width: 100%;
+            height: 100%;
+            min-height: 324px;
+            background: rgba(255,255,255,0.08);
+            border: 4px dashed rgba(255,255,255,0.55);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            padding: 0;
+            color: rgba(255,255,255,0.75);
+            font-size: 24px;
+            text-align: center;
+        }
+
+        .image-placeholder img {
+            width: 100%;
+            height: 100%;
+            min-height: 324px;
+            border-radius: 12px;
+            object-fit: cover;
+            object-position: center;
+            display: block;
+        }
+
+        .right-box-content {
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .right-box-content h2 {
+            font-size: 34px;
+            margin: 0;
+            color: #FFD700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
+            border-bottom: 3px solid rgba(255,255,255,0.25);
+            padding-bottom: 10px;
+        }
+
+        .right-box-content p {
+            font-family: 'Comic Neue', 'Comic Sans MS', cursive;
+            font-size: 21px;
+            line-height: 1.7;
+            margin: 0;
+        }
+
+        /* ==========================================================
+           LES 3 BOUTONS DE CHOIX
+           ========================================================== */
+        .choices-container {
+            position: relative;
+            z-index: 5;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            padding: 30px 20px 80px;
+        }
+
+        .choice-btn {
+            position: relative;
+            overflow: visible;
+            background: #1a237e;
+            color: #ffffff;
+            font-family: 'Bangers', cursive;
+            font-size: 25px;
+            letter-spacing: 2px;
+            padding: 17px 34px;
+            border: 4px solid #0d1754;
+            border-radius: 16px;
+            cursor: pointer;
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.45);
+            box-shadow: 0 6px 0 #0a0f3d;
+        }
+
+        .choice-btn:hover {
+            background: #283593;
+            transform: translateY(-3px) scale(1.03);
+            box-shadow: 0 9px 0 #0a0f3d,
+                        0 0 14px rgba(255, 40, 40, 0.75),
+                        0 0 34px rgba(255, 0, 0, 0.45);
+        }
+
+        /* ==========================================================
+           FONDU
+           ========================================================== */
+        #fondu {
+            position: fixed;
+            inset: 0;
+            background: #000;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.7s ease;
+        }
+        #fondu.noir { opacity: 1; }
+
+        @media (max-width: 900px) {
+            .content-container { flex-direction: column; align-items: center; }
+            .story-box { max-width: 640px; width: 100%; min-height: auto; }
+            .site-header { font-size: 30px; }
+        }
+    </style>
+</head>
+<body class="alarme">
+
+    <!-- Intérieur de la cabine d'ascenseur -->
+    <div class="parois"></div>
+    <div class="solAscenseur"></div>
+    <div class="ombres"></div>
+    <div class="mainCourante"></div>
+    <div class="plafond"><div class="lampe"></div></div>
+
+    <!-- Afficheur d'étage + panneau de boutons -->
+    <div class="afficheur">1</div>
+    <div class="panneau">
+        <div class="pastille allumee"></div>
+        <div class="pastille"></div>
+        <div class="pastille"></div>
+        <div class="pastille"></div>
+    </div>
+
+    <div id="poussierePuits"></div>
+
+    <!-- L'alarme : voile rouge + taches qui balayent la cabine -->
+    <div id="voixAlarme"></div>
+    <div id="tachesAlarme"></div>
+
+    <!-- Titre du jeu -->
+    <header class="site-header">L'appartement en feu</header>
+
+    <!-- Les deux boîtes noires transparentes -->
+    <main class="content-container">
+
+        <!-- Boîte gauche : emplacement image -->
+        <section class="story-box">
+            <div class="image-placeholder">📷 Emplacement image<br>(à ajouter toi-même)</div>
+        </section>
+
+        <!-- Boîte droite : titre + scénario -->
+        <section class="story-box">
+            <div class="right-box-content">
+                <h2>Appartement en feu</h2>
+                <p>À remplir.</p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Les 3 boutons de choix -->
+    <nav class="choices-container">
+        <button class="choice-btn burn-btn" data-dest="" data-couleur="blue">Choix 1<span class="scorch"></span></button>
+        <button class="choice-btn burn-btn" data-dest="" data-couleur="blue">Choix 2<span class="scorch"></span></button>
+        <button class="choice-btn burn-btn" data-dest="" data-couleur="blue">Choix 3<span class="scorch"></span></button>
+    </nav>
+
+    <div id="fondu"></div>
+
+    <script>
+        /* ============ POUSSIÈRE QUI TOMBE DANS LE PUITS ============ */
+        function creerPoussiere() {
+            const conteneur = document.getElementById('poussierePuits');
+
+            for (let i = 0; i < 26; i++) {
+                const p = document.createElement('div');
+                p.className = 'poussiere';
+                const taille = 4 + Math.random() * 12;
+                p.style.width = p.style.height = taille.toFixed(0) + 'px';
+                p.style.left = (24 + Math.random() * 52).toFixed(1) + 'vw';
+                p.style.animationDuration = (2.4 + Math.random() * 2.6).toFixed(2) + 's';
+                p.style.animationDelay = (-Math.random() * 5).toFixed(2) + 's';
+                conteneur.appendChild(p);
+            }
+        }
+
+        window.addEventListener('load', creerPoussiere);
+
+        /* ============ TACHES ROUGES D'ALARME QUI BALAYENT LA CABINE ============ */
+        function creerTachesAlarme() {
+            const conteneur = document.getElementById('tachesAlarme');
+
+            for (let i = 0; i < 5; i++) {
+                const t = document.createElement('div');
+                t.className = 'tacheRouge';
+                const taille = 260 + Math.random() * 320;
+                t.style.width = taille.toFixed(0) + 'px';
+                t.style.height = taille.toFixed(0) + 'px';
+                t.style.top = (Math.random() * 70).toFixed(0) + 'vh';
+                t.style.animationDuration = (1.1 + Math.random() * 1.2).toFixed(2) + 's';
+                t.style.animationDelay = (-Math.random() * 1.6).toFixed(2) + 's';
+                conteneur.appendChild(t);
+            }
+        }
+
+        window.addEventListener('load', creerTachesAlarme);
+    </script>
+
+</body>
+</html>

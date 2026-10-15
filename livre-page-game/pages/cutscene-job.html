@@ -1,0 +1,559 @@
+pu<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>L'appartement en feu - Le travail</title>
+    <link rel="stylesheet" href="../shared.css">
+    <style>
+        /* ============ CADRE : la scène est dessinée en 1600x900
+           puis mise à l'échelle pour remplir l'écran (caméra fixe) ============ */
+        body {
+            background: #000;
+            overflow: hidden;
+            height: 100vh;
+            margin: 0;
+        }
+
+        #cadre {
+            position: fixed;
+            inset: 0;
+            overflow: hidden;
+        }
+
+        #scene {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 1600px;
+            height: 900px;
+            margin-left: -800px;
+            margin-top: -450px;
+            transform: scale(var(--k, 1));
+            background: #ff9f1c;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        /* Sol brun */
+        .floor {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 234px;
+            background: #8b5a2b;
+            border-top: 14px solid #6b4420;
+        }
+
+        /* ============ STICKMAN (3x plus grand) ============ */
+        .stickman {
+            position: absolute;
+            width: 360px;
+            height: 780px;
+            margin-left: -180px;
+            transition: left 1.2s ease-in-out, opacity 0.9s ease-in;
+            z-index: 5;
+        }
+
+        /* Tête pleine */
+        .stickman .tete {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            margin-left: -108px;
+            width: 216px;
+            height: 216px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        .stickman .corps {
+            position: absolute;
+            top: 226px;
+            left: 50%;
+            margin-left: -24px;
+            width: 48px;
+            height: 340px;
+            background: currentColor;
+            border-radius: 24px;
+        }
+
+        .stickman .bras,
+        .stickman .jambe {
+            position: absolute;
+            width: 48px;
+            background: currentColor;
+            border-radius: 24px;
+            transform-origin: top center;
+        }
+
+        /* bras */
+        .stickman .bras-g { top: 246px; left: 50%; margin-left: -18px; height: 264px; transform: rotate(9deg); }
+        .stickman .bras-d { top: 246px; left: 50%; margin-left: -30px; height: 264px; transform: rotate(-9deg); }
+
+        /* jambes */
+        .stickman .jambe-g { top: 556px; left: 50%; margin-left: -18px; height: 224px; transform: rotate(5deg); }
+        .stickman .jambe-d { top: 556px; left: 50%; margin-left: -30px; height: 224px; transform: rotate(-5deg); }
+
+        /* ombre au sol */
+        .stickman::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            margin-left: -84px;
+            width: 168px;
+            height: 26px;
+            background: rgba(0, 0, 0, 0.28);
+            border-radius: 50%;
+        }
+
+        /* marche */
+        .stickman.marche .jambe-g { animation: pasG 0.45s ease-in-out infinite alternate; }
+        .stickman.marche .jambe-d { animation: pasD 0.45s ease-in-out infinite alternate; }
+        .stickman.marche .bras-g  { animation: brasG 0.45s ease-in-out infinite alternate; }
+        .stickman.marche .bras-d  { animation: brasD 0.45s ease-in-out infinite alternate; }
+
+        @keyframes pasG  { from { transform: rotate(17deg); }  to { transform: rotate(-17deg); } }
+        @keyframes pasD  { from { transform: rotate(-17deg); } to { transform: rotate(17deg); } }
+        @keyframes brasG { from { transform: rotate(-15deg); } to { transform: rotate(15deg); } }
+        @keyframes brasD { from { transform: rotate(15deg); }  to { transform: rotate(-15deg); } }
+
+        /* Joueur : debout derrière la caisse, tête et torse visibles */
+        #joueur {
+            color: #000;
+            z-index: 4;
+            left: 420px;
+            bottom: 72px;
+        }
+
+        /* Clients : debout sur le sol, devant la caisse */
+        .client { bottom: 30px; z-index: 7; }
+        .client.c1 { color: #2e86de; }
+        .client.c2 { color: #27ae60; }
+        .client.c3 { color: #8e44ad; }
+
+        /* article tenu dans la main du client */
+        .article-client {
+            position: absolute;
+            top: 420px;
+            left: 50%;
+            margin-left: 60px;
+            font-size: 95px;
+            line-height: 1;
+            opacity: 0;
+            transition: opacity 0.25s;
+        }
+        .client.porte .article-client { opacity: 1; }
+
+        /* ============ PISTOLET SCANNEUR (tenu par le joueur) ============ */
+        #scanneur {
+            position: absolute;
+            top: 396px;
+            left: 50%;
+            margin-left: -34px;
+            width: 296px;
+            height: 96px;
+            background: #000;
+            border-radius: 20px;
+            z-index: 9;
+            transform-origin: 14px 80px;
+        }
+        #scanneur .poignee {
+            position: absolute;
+            top: 74px;
+            left: 36px;
+            width: 54px;
+            height: 112px;
+            background: #000;
+            border-radius: 14px;
+            transform: rotate(20deg);
+        }
+        #scanneur .lentille {
+            position: absolute;
+            top: 18px;
+            right: -28px;
+            width: 46px;
+            height: 60px;
+            background: #ff2b2b;
+            border-radius: 10px;
+        }
+
+        /* faisceau rouge vertical (du scanner vers le plateau) */
+        #faisceau {
+            position: absolute;
+            top: 496px;
+            left: 50%;
+            margin-left: 262px;
+            width: 28px;
+            height: 96px;
+            background: linear-gradient(to bottom, rgba(255,0,0,0.95), rgba(255,0,0,0.05));
+            border-radius: 16px;
+            z-index: 8;
+            opacity: 0;
+            transition: opacity 0.15s;
+        }
+        #faisceau.on { opacity: 1; }
+
+        /* "BIP!" */
+        #bip {
+            position: absolute;
+            top: 300px;
+            left: 50%;
+            margin-left: 90px;
+            z-index: 9;
+            font-family: 'Bangers', cursive;
+            font-size: 130px;
+            color: #fff;
+            text-shadow: 8px 8px 0 #000;
+            opacity: 0;
+            transition: opacity 0.15s;
+        }
+        #bip.on { opacity: 1; }
+
+        /* ============ CAISSE (plus longue, tout en gris) ============ */
+        #caisse {
+            position: absolute;
+            left: 20px;
+            bottom: 62px;
+            width: 1030px;
+            height: 380px;
+            z-index: 6;
+        }
+
+        /* Le plateau du haut (barre fine qui dépasse de chaque côté) */
+        #caisse .plateau {
+            position: absolute;
+            top: 0;
+            left: -22px;
+            width: 1074px;
+            height: 30px;
+            background: #b3b8cc;
+            border-radius: 4px;
+        }
+
+        /* Corps principal */
+        #caisse .corps-caisse {
+            position: absolute;
+            top: 30px;
+            left: 22px;
+            width: 986px;
+            height: 330px;
+            background: #9a9fb8;
+        }
+
+        /* Trait horizontal clair */
+        #caisse .trait {
+            position: absolute;
+            top: 56px;
+            left: 22px;
+            width: 986px;
+            height: 14px;
+            background: #ccd1e4;
+        }
+
+        /* Grande zone claire arrondie */
+        #caisse .devant {
+            position: absolute;
+            top: 84px;
+            left: 76px;
+            width: 878px;
+            height: 274px;
+            background: #b9bed4;
+            border-radius: 26px;
+        }
+
+        /* Convoyeur */
+        #caisse .convoyeur {
+            position: absolute;
+            top: 5px;
+            left: 30px;
+            width: 970px;
+            height: 20px;
+            background: #6f748c;
+            border-radius: 10px;
+        }
+
+        /* Socle */
+        #caisse .socle {
+            position: absolute;
+            bottom: -10px;
+            left: 86px;
+            width: 858px;
+            height: 16px;
+            background: #7b809a;
+        }
+
+        /* ============ ÉCRAN DE CAISSE (côté GAUCHE de la caisse) ============ */
+        /* Le bloc gris qui monte derrière la caisse, à gauche */
+        .comptoir-haut {
+            position: absolute;
+            top: -30px;
+            left: 40px;
+            width: 340px;
+            height: 120px;
+            background: #9a9fb8;
+        }
+
+        /* Pied / colonne de l'écran */
+        .comptoir-pied {
+            position: absolute;
+            top: -150px;
+            left: 200px;
+            width: 84px;
+            height: 126px;
+            background: #8a8fa8;
+        }
+
+        /* Cou de l'écran */
+        .comptoir-cou {
+            position: absolute;
+            top: -222px;
+            left: 230px;
+            width: 34px;
+            height: 80px;
+            background: #7b809a;
+            border-radius: 5px;
+        }
+
+        /* L'écran */
+        .comptoir-ecran {
+            position: absolute;
+            top: -352px;
+            left: 94px;
+            width: 240px;
+            height: 138px;
+            background: #6a6f86;
+            border-radius: 10px;
+        }
+
+        /* ============ ARTICLE SUR LE PLATEAU (2x plus gros) ============ */
+        .article {
+            position: absolute;
+            font-size: 130px;
+            line-height: 1;
+            z-index: 8;
+            opacity: 0;
+            transition: left 1.5s ease-in-out, top 1.5s ease-in-out, opacity 0.3s;
+        }
+        .article.visible { opacity: 1; }
+
+        /* ============ FONDU ============ */
+        #fondu {
+            position: fixed;
+            inset: 0;
+            background: #000;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.8s ease;
+        }
+        #fondu.noir { opacity: 1; }
+    </style>
+</head>
+<body>
+
+    <div id="cadre">
+    <div id="scene">
+        <div class="floor"></div>
+
+        <!-- Joueur (stickman noir) derrière la caisse, il tient le scanner -->
+        <div class="stickman" id="joueur">
+            <div class="tete"></div>
+            <div class="corps"></div>
+            <div class="bras bras-g"></div>
+            <div class="bras bras-d"></div>
+            <div class="jambe jambe-g"></div>
+            <div class="jambe jambe-d"></div>
+
+            <!-- Scanner dans sa main + faisceau + BIP -->
+            <div id="scanneur">
+                <div class="poignee"></div>
+                <div class="lentille"></div>
+            </div>
+            <div id="faisceau"></div>
+            <div id="bip">BIP!</div>
+        </div>
+
+        <!-- Caisse grise (forme 2D simple, écran à droite) -->
+        <div id="caisse">
+            <div class="plateau"></div>
+            <div class="convoyeur"></div>
+            <div class="corps-caisse"></div>
+            <div class="trait"></div>
+            <div class="devant"></div>
+            <div class="socle"></div>
+            <div class="comptoir-haut"></div>
+            <div class="comptoir-pied"></div>
+            <div class="comptoir-cou"></div>
+            <div class="comptoir-ecran"></div>
+        </div>
+
+        <!-- Article qui glisse sur le plateau -->
+        <div class="article" id="articleActif">🍎</div>
+
+        <!-- Clients alignés, debout sur le sol -->
+        <div class="stickman client c1" id="cli1" style="left:1150px;">
+            <div class="tete"></div>
+            <div class="corps"></div>
+            <div class="bras bras-g"></div>
+            <div class="bras bras-d"></div>
+            <div class="jambe jambe-g"></div>
+            <div class="jambe jambe-d"></div>
+            <div class="article-client">🍎</div>
+        </div>
+
+        <div class="stickman client c2" id="cli2" style="left:1290px;">
+            <div class="tete"></div>
+            <div class="corps"></div>
+            <div class="bras bras-g"></div>
+            <div class="bras bras-d"></div>
+            <div class="jambe jambe-g"></div>
+            <div class="jambe jambe-d"></div>
+            <div class="article-client">🥛</div>
+        </div>
+
+        <div class="stickman client c3" id="cli3" style="left:1430px;">
+            <div class="tete"></div>
+            <div class="corps"></div>
+            <div class="bras bras-g"></div>
+            <div class="bras bras-d"></div>
+            <div class="jambe jambe-g"></div>
+            <div class="jambe jambe-d"></div>
+            <div class="article-client">🍞</div>
+        </div>
+    </div>
+    </div>
+
+    <div id="fondu"></div>
+
+    <script>
+        /* ---------- Mise à l'échelle : la scène 1600x900 remplit l'écran ---------- */
+        function mettreAEchelle() {
+            const k = Math.min(window.innerWidth / 1600, window.innerHeight / 900);
+            document.documentElement.style.setProperty('--k', k);
+        }
+        window.addEventListener('resize', mettreAEchelle);
+        mettreAEchelle();
+
+        const scene    = document.getElementById('scene');
+        const fondu    = document.getElementById('fondu');
+        const article  = document.getElementById('articleActif');
+        const faisceau = document.getElementById('faisceau');
+        const bip      = document.getElementById('bip');
+        const scanneur = document.getElementById('scanneur');
+        const joueur   = document.getElementById('joueur');
+        const caisse   = document.getElementById('caisse');
+
+        const clients = [
+            { el: document.getElementById('cli1'), item: '🍎', debut: 1150 },
+            { el: document.getElementById('cli2'), item: '🥛', debut: 1290 },
+            { el: document.getElementById('cli3'), item: '🍞', debut: 1430 }
+        ];
+
+        const ATTENTE = ms => new Promise(r => setTimeout(r, ms));
+
+        /* ---------- Positions calculées en pixels (alignement parfait) ---------- */
+        let POS_DEPART, POS_SCAN, POS_FIN, PLATEAU_Y;
+
+        function mesurer() {
+            const c = caisse.getBoundingClientRect();
+            const k = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--k')) || 1;
+
+            // le plateau est tout en haut de la caisse
+            PLATEAU_Y = c.top / k;
+
+            const caisseGauche = c.left / k;
+            const caisseDroite = (c.left + c.width) / k;
+
+            // l'article apparaît au coin DROIT du plateau (côté clients),
+            // glisse vers la gauche devant le caissier, puis s'arrête
+            // à l'extrémité gauche où le client vient le chercher
+            POS_DEPART = caisseDroite - 140;
+            POS_SCAN   = 420;
+            POS_FIN    = caisseGauche + 140;
+        }
+
+        /* Place l'article à une position X, posé sur le plateau */
+        function placerArticle(x) {
+            article.style.left = (x - 65) + 'px';
+            article.style.top = (PLATEAU_Y - 105) + 'px';
+        }
+
+        /* Sert un client : l'article est posé sur le plateau (côté droit),
+           glisse devant le caissier, est scanné, puis le client avance,
+           le prend dans sa main et s'en va. */
+        async function servirClient(client, index) {
+            // 1) L'article apparaît au coin droit du plateau (côté clients)
+            article.textContent = client.item;
+            placerArticle(POS_DEPART);
+            article.classList.add('visible');
+            await ATTENTE(700);
+
+            // 2) Il glisse doucement jusqu'à devant le caissier
+            placerArticle(POS_SCAN);
+            await ATTENTE(1900);
+
+            // 3) Le caissier scanne : faisceau rouge + BIP + coup de poignet
+            faisceau.classList.add('on');
+            bip.classList.add('on');
+            scanneur.animate(
+                [{ transform: 'rotate(0deg)' }, { transform: 'rotate(-11deg)' }, { transform: 'rotate(0deg)' }],
+                { duration: 280, easing: 'ease-in-out' }
+            );
+            await ATTENTE(600);
+            faisceau.classList.remove('on');
+            bip.classList.remove('on');
+            await ATTENTE(350);
+
+            // 4) L'article continue jusqu'à l'extrémité gauche de la caisse
+            placerArticle(POS_FIN);
+            await ATTENTE(1700);
+
+            // 5) Le client avance et prend l'article dans sa main
+            client.el.classList.add('marche');
+            client.el.style.left = '260px';
+            await ATTENTE(1700);
+            client.el.classList.remove('marche');
+
+            // l'article quitte la caisse et passe dans la main du client
+            article.classList.remove('visible');
+            client.el.classList.add('porte');
+            await ATTENTE(600);
+
+            // 6) Il repart et disparaît
+            client.el.classList.add('marche');
+            client.el.style.left = '-260px';
+            client.el.style.opacity = '0';
+            await ATTENTE(1500);
+            client.el.classList.remove('marche', 'porte');
+
+            // 7) Les clients restants avancent dans la file
+            const suivant = clients[index + 1];
+            if (suivant) suivant.el.style.left = client.debut + 'px';
+            await ATTENTE(300);
+        }
+
+        async function lancerScene() {
+            await ATTENTE(700);
+            mesurer();
+
+            for (let i = 0; i < clients.length; i++) {
+                await servirClient(clients[i], i);
+            }
+
+            // Fin : fondu au noir
+            scene.style.transition = 'opacity 0.8s ease';
+            scene.style.opacity = '0';
+            fondu.classList.add('noir');
+            await ATTENTE(1300);
+
+            window.location.href = 'win-page.html';
+        }
+
+        lancerScene();
+    </script>
+
+</body>
+</html>

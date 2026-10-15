@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>L'appartement en feu - Tout est en feu</title>
+    <link rel="stylesheet" href="../shared.css">
+    <style>
+        body {
+            background: #000;
+            height: auto;
+            min-height: 100vh;
+            width: 100%;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        /* ============ FEU EN FOND ============ */
+        #fireBg {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        /* Flammes du bas (comme la page de départ) */
+        .flamme-bg {
+            position: absolute;
+            bottom: -120px;
+            font-size: 130px;
+            filter: drop-shadow(0 0 18px rgba(255, 90, 0, 0.55));
+            animation: flammeBg linear infinite;
+        }
+
+        @keyframes flammeBg {
+            0%   { transform: translateY(0) rotate(-8deg) scale(0.9); opacity: 0; }
+            10%  { opacity: 1; }
+            50%  { transform: translateY(-52vh) rotate(7deg) scale(1.15); }
+            90%  { opacity: 1; }
+            100% { transform: translateY(-112vh) rotate(-6deg) scale(0.65); opacity: 0; }
+        }
+
+        /* Particules de feu */
+        .particule-bg {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle, #FFD700, #FF4500, #8B0000);
+            animation: riseParticule ease-out infinite;
+        }
+
+        @keyframes riseParticule {
+            0%   { transform: translateY(100vh) scale(1); opacity: 0.85; }
+            100% { transform: translateY(-140px) scale(0); opacity: 0; }
+        }
+
+        /* Fumée */
+        .fumee-bg {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(90, 90, 90, 0.28);
+            animation: fumeeBg ease-out infinite;
+        }
+
+        @keyframes fumeeBg {
+            0%   { transform: translateY(100vh) scale(0.5); opacity: 0.3; }
+            100% { transform: translateY(-240px) scale(2.8); opacity: 0; }
+        }
+
+        /* Lueur rouge pulsante sur les bords */
+        #lueurBords {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            background: radial-gradient(ellipse at 50% 50%, transparent 45%, rgba(255, 60, 0, 0.42) 100%);
+            animation: pulseLueur 2.6s ease-in-out infinite;
+        }
+
+        @keyframes pulseLueur {
+            0%, 100% { opacity: 0.55; }
+            50%      { opacity: 1; }
+        }
+
+        /* ============ TITRE ============ */
+        .site-header {
+            position: relative;
+            z-index: 5;
+            text-align: center;
+            padding: 18px 10px 6px;
+            font-size: 46px;
+            color: #ffffff;
+            letter-spacing: 3px;
+            text-shadow:
+                0 0 10px #FF4500,
+                0 0 24px #FF4500,
+                0 0 50px #FF6347,
+                4px 5px 0 rgba(139, 0, 0, 0.85);
+            animation: flicker 0.5s infinite alternate;
+        }
+
+        @keyframes flicker {
+            0%   { text-shadow: 0 0 10px #FF4500, 0 0 22px #FF4500, 0 0 44px #FF6347, 4px 5px 0 rgba(139,0,0,0.85); }
+            100% { text-shadow: 0 0 16px #FF4500, 0 0 34px #FF4500, 0 0 70px #FF6347, 4px 5px 0 rgba(139,0,0,0.85); }
+        }
+
+        /* ============ LES DEUX BOÎTES NOIRES ============ */
+        .content-container {
+            position: relative;
+            z-index: 5;
+            display: flex;
+            justify-content: center;
+            align-items: stretch;
+            gap: 26px;
+            padding: 18px 26px 6px;
+        }
+
+        .story-box {
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 22px;
+            padding: 28px;
+            min-height: 380px;
+            flex: 1;
+            max-width: 640px;
+        }
+
+        .image-placeholder {
+            width: 100%;
+            height: 100%;
+            min-height: 324px;
+            background: rgba(255,255,255,0.08);
+            border: 4px dashed rgba(255,255,255,0.55);
+            border-radius: 16px;
+            display: flex;
+            align-items: stretch;
+            justify-content: stretch;
+            overflow: hidden;
+            padding: 0;
+            color: rgba(255,255,255,0.75);
+            font-size: 24px;
+            text-align: center;
+        }
+
+        .image-placeholder img {
+            width: 100%;
+            height: 100%;
+            min-height: 324px;
+            border-radius: 12px;
+            object-fit: cover;
+            object-position: center;
+            display: block;
+        }
+
+        .right-box-content {
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .right-box-content h2 {
+            font-size: 34px;
+            margin: 0;
+            color: #FFD700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
+            border-bottom: 3px solid rgba(255,255,255,0.25);
+            padding-bottom: 10px;
+        }
+
+        .right-box-content p {
+            font-family: 'Comic Neue', 'Comic Sans MS', cursive;
+            font-size: 21px;
+            line-height: 1.7;
+            margin: 0;
+        }
+
+        /* ============ LES 3 BOUTONS ROUGES ============ */
+        .choices-container {
+            position: relative;
+            z-index: 5;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            padding: 30px 20px 80px;
+        }
+
+        .choice-btn {
+            position: relative;
+            overflow: visible;
+            background: #c1121f;
+            color: #ffffff;
+            font-family: 'Bangers', cursive;
+            font-size: 25px;
+            letter-spacing: 2px;
+            padding: 17px 34px;
+            border: 4px solid #7d0008;
+            border-radius: 16px;
+            cursor: pointer;
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.45);
+            box-shadow: 0 6px 0 #6d0006;
+        }
+
+        .choice-btn:hover {
+            background: #e01e2c;
+            transform: translateY(-3px) scale(1.03);
+            box-shadow: 0 9px 0 #6d0006,
+                        0 0 14px rgba(255, 40, 40, 0.75),
+                        0 0 34px rgba(255, 0, 0, 0.45);
+        }
+
+        /* ==========================================================
+           SCÈNE "SAUT" : même animation de sang que "ne pas cuisiner"
+           ========================================================== */
+
+        /* ---------- La masse de sang qui TOMBE du haut ---------- */
+        #sangMasse {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 0;
+            background: #b3121b;
+            z-index: 20;
+            pointer-events: none;
+            opacity: 0;
+        }
+
+        /* Le bord du bas + les gouttes (SVG), collé au front du sang */
+        #bordSang {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 300px;
+            margin-top: -276px;
+            z-index: 21;
+            pointer-events: none;
+            opacity: 0;
+        }
+
+        #bordSang svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+            overflow: visible;
+        }
+
+        /* Bulles qui remontent dans le sang */
+        .bulle {
+            position: fixed;
+            border-radius: 50%;
+            background: rgba(255, 120, 120, 0.45);
+            border: 3px solid rgba(90, 10, 16, 0.45);
+            z-index: 22;
+            pointer-events: none;
+            animation: remonteBulle linear forwards;
+        }
+
+        @keyframes remonteBulle {
+            0%   { transform: translateY(0) scale(0.4); opacity: 0; }
+            20%  { opacity: 0.9; }
+            100% { transform: translateY(-260px) scale(1.15); opacity: 0; }
+        }
+
+        /* Éclaboussures quand la vague touche le bas */
+        .eclaboussure {
+            position: fixed;
+            border-radius: 50%;
+            background: #c8171f;
+            z-index: 23;
+            pointer-events: none;
+            animation: sautEclaboussure ease-out forwards;
+        }
+
+        @keyframes sautEclaboussure {
+            0%   { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(var(--jx), var(--jy)) scale(0.2); opacity: 0; }
+        }
+
+        /* Cercle noir transparent */
+        #cercleMort {
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            width: 220px;
+            height: 220px;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.55);
+            border: 6px solid rgba(255, 255, 255, 0.22);
+            border-radius: 50%;
+            z-index: 30;
+            opacity: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            pointer-events: none;
+        }
+
+        #cercleMort .contenu {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: visible;
+        }
+
+        #cercleMort.tombe {
+            opacity: 1;
+            animation: chuteCercle 0.85s cubic-bezier(0.45, 0, 0.7, 0.55) forwards;
+        }
+
+        @keyframes chuteCercle {
+            0%   { transform: translate(-50%, -50%) translateY(-120vh); }
+            74%  { transform: translate(-50%, -50%) translateY(10px); }
+            88%  { transform: translate(-50%, -50%) translateY(-6px); }
+            100% { transform: translate(-50%, -50%) translateY(0); }
+        }
+
+        /* Le crâne (SVG) centré par flexbox */
+        #craneMort {
+            width: 200px;
+            height: 200px;
+            flex: 0 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #craneMort svg {
+            width: 200px;
+            height: 200px;
+            display: block;
+        }
+
+        #craneMort .crane-tombant {
+            display: block;
+            line-height: 0;
+            animation: chuteCrane 0.8s cubic-bezier(0.42, 0, 0.68, 0.5) forwards;
+        }
+
+        @keyframes chuteCrane {
+            0%   { transform: translateY(-150vh) rotate(-170deg) scale(0.65); opacity: 0; }
+            14%  { opacity: 1; }
+            72%  { transform: translateY(12px) rotate(7deg) scale(1.12, 0.86); }
+            87%  { transform: translateY(-7px) rotate(-4deg) scale(0.94, 1.07); }
+            100% { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+        }
+
+        /* Texte sous le cercle */
+        #texteMort {
+            position: fixed;
+            left: 0;
+            right: 0;
+            top: calc(50% + 145px);
+            z-index: 31;
+            text-align: center;
+            font-family: 'Bangers', cursive;
+            font-size: clamp(30px, 6vw, 68px);
+            letter-spacing: 5px;
+            color: #ffffff;
+            text-shadow: 4px 4px 0 #5a0008;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #texteMort.apparait { animation: fonduTexte 1.5s ease forwards; }
+
+        @keyframes fonduTexte {
+            0%   { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Gouttes de sang qui descendent des lettres */
+        .goutteLettre {
+            position: absolute;
+            top: 100%;
+            width: 9px;
+            height: 15px;
+            background: #b3121b;
+            border-radius: 50% 50% 60% 60%;
+            animation: goutteTombe 1.6s ease-in forwards;
+        }
+
+        @keyframes goutteTombe {
+            0%   { opacity: 0; transform: translateY(-12px) scaleY(0.6); }
+            30%  { opacity: 1; transform: translateY(0) scaleY(1); }
+            100% { opacity: 0; transform: translateY(50px) scaleY(1.6); }
+        }
+
+        @media (max-width: 900px) {
+            .content-container { flex-direction: column; align-items: center; }
+            .story-box { max-width: 640px; width: 100%; min-height: auto; }
+            .site-header { font-size: 30px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Feu en fond (comme la page de départ) -->
+    <div id="fireBg"></div>
+    <div id="lueurBords"></div>
+
+    <!-- Titre du jeu -->
+    <header class="site-header">L'appartement en feu</header>
+
+    <!-- Les deux boîtes noires transparentes -->
+    <main class="content-container">
+
+        <!-- Boîte gauche : emplacement image -->
+        <section class="story-box">
+            <div class="image-placeholder">
+                <img src="../images/appartement-en-feu.avif" alt="Appartement en feu">
+            </div>
+        </section>
+
+        <!-- Boîte droite : titre + scénario -->
+        <section class="story-box">
+            <div class="right-box-content">
+                <h2>Appartement en feu</h2>
+                <p>Comme vous ne savez pas cuisiner, tout l'appartement est en feu et vous ne savez pas quoi faire.</p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Les 3 boutons de choix -->
+    <nav class="choices-container">
+        <button class="choice-btn burn-btn" data-dest="cutscene-course.html" data-couleur="orange">Courez dehors de votre appartement<span class="scorch"></span></button>
+        <button class="choice-btn burn-btn" data-scene="saut">Sautez par la fenêtre<span class="scorch"></span></button>
+        <button class="choice-btn burn-btn" data-scene="crier">Criez à l'aide<span class="scorch"></span></button>
+    </nav>
+
+    <div class="screen-transition" id="screenTransition"></div>
+
+    <!-- Scène "saut" : le sang coule sur cette page (identique à "ne pas cuisiner") -->
+    <div id="sangMasse"></div>
+    <div id="bordSang"></div>
+
+    <div id="cercleMort">
+        <div class="contenu">
+            <span id="craneMort"></span>
+        </div>
+    </div>
+
+    <div id="texteMort">VOUS ETES MORT</div>
+
+    <script>
+        /* ============ FEU DE FOND ============ */
+        function creerFeuFond() {
+            const bg = document.getElementById('fireBg');
+
+            // flammes cartoones qui montent
+            for (let i = 0; i < 20; i++) {
+                const flamme = document.createElement('span');
+                flamme.className = 'flamme-bg';
+                flamme.textContent = '🔥';
+                flamme.style.left = (Math.random() * 100) + 'vw';
+                flamme.style.fontSize = (60 + Math.random() * 90).toFixed(0) + 'px';
+                flamme.style.animationDuration = (5 + Math.random() * 5).toFixed(2) + 's';
+                flamme.style.animationDelay = (-Math.random() * 10).toFixed(2) + 's';
+                bg.appendChild(flamme);
+            }
+
+            // particules
+            for (let i = 0; i < 40; i++) {
+                const p = document.createElement('div');
+                p.className = 'particule-bg';
+                p.style.left = Math.random() * 100 + 'vw';
+                p.style.width = p.style.height = (7 + Math.random() * 12).toFixed(0) + 'px';
+                p.style.animationDuration = (3 + Math.random() * 3).toFixed(2) + 's';
+                p.style.animationDelay = (-Math.random() * 6).toFixed(2) + 's';
+                bg.appendChild(p);
+            }
+
+            // fumée
+            for (let i = 0; i < 16; i++) {
+                const f = document.createElement('div');
+                f.className = 'fumee-bg';
+                f.style.left = Math.random() * 100 + 'vw';
+                f.style.width = f.style.height = (26 + Math.random() * 40).toFixed(0) + 'px';
+                f.style.animationDuration = (5 + Math.random() * 4).toFixed(2) + 's';
+                f.style.animationDelay = (-Math.random() * 8).toFixed(2) + 's';
+                bg.appendChild(f);
+            }
+        }
+
+        window.addEventListener('load', creerFeuFond);
+
+        /* ==========================================================
+           SCÈNE "SAUT" : identique à l'animation de sang
+           du bouton "Ne pas essayer de cuisiner"
+           ========================================================== */
+        const masse       = document.getElementById('sangMasse');
+        const bordSang   = document.getElementById('bordSang');
+        const cercleMort  = document.getElementById('cercleMort');
+        const craneMort   = document.getElementById('craneMort');
+        const texteMort   = document.getElementById('texteMort');
+        const screenTrans = document.getElementById('screenTransition');
+
+        const ATTENTE = ms => new Promise(r => setTimeout(r, ms));
+
+        /* ---------- Le bord du sang, dessiné en SVG ---------- */
+        function construireBordSang() {
+            const L = 1000;
+            const H = 300;
+            const base = 12;
+
+            let d = `M 0 0 L ${L} 0 L ${L} ${base}`;
+
+            let x = L;
+            const gouttes = 13;
+            for (let i = 0; i < gouttes; i++) {
+                const largeur = L / gouttes;
+                const x1 = x;
+                const x2 = x - largeur;
+                const profondeur = 26 + Math.random() * 150;
+                const milieu = (x1 + x2) / 2;
+                const cx = milieu + (Math.random() * 26 - 13);
+
+                d += ` Q ${cx} ${base + profondeur * 2.2} ${x2} ${base + (profondeur * 0.18)}`;
+                x = x2;
+            }
+            d += ` L 0 ${base} Z`;
+
+            bordSang.innerHTML =
+                `<svg viewBox="0 0 ${L} ${H}" preserveAspectRatio="none">
+                    <path d="${d}" fill="#b3121b"/>
+                 </svg>`;
+        }
+
+        /* ---------- Le sang descend du haut et remplit l'écran ---------- */
+        function remplirDeSang(dureeMs) {
+            construireBordSang();
+
+            masse.style.opacity = '1';
+            bordSang.style.opacity = '1';
+
+            const debut = performance.now();
+            let bullesLancees = 0;
+
+            function animer(now) {
+                const t = Math.min(1, (now - debut) / dureeMs);
+                const p = 1 - Math.pow(1 - t, 2);
+                const niveau = p * 100;
+
+                masse.style.height = niveau + 'vh';
+                bordSang.style.top = niveau + 'vh';
+
+                if (niveau > 10 && bullesLancees < 30) {
+                    bullesLancees++;
+                    creerBulle(niveau);
+                }
+
+                if (t > 0.97) creerEclaboussures();
+
+                if (t < 1) requestAnimationFrame(animer);
+            }
+
+            requestAnimationFrame(animer);
+        }
+
+        /* Bulles cartoones */
+        function creerBulle(niveauVh) {
+            const bulle = document.createElement('div');
+            bulle.className = 'bulle';
+            const taille = 8 + Math.random() * 20;
+            bulle.style.width = taille + 'px';
+            bulle.style.height = taille + 'px';
+            bulle.style.left = (Math.random() * 100).toFixed(1) + 'vw';
+            bulle.style.top = (Math.random() * niveauVh * 0.92).toFixed(1) + 'vh';
+            bulle.style.animationDuration = (1.4 + Math.random() * 1.6).toFixed(2) + 's';
+            document.body.appendChild(bulle);
+            setTimeout(() => bulle.remove(), 3200);
+        }
+
+        /* Éclaboussures */
+        function creerEclaboussures() {
+            for (let i = 0; i < 12; i++) {
+                const eclat = document.createElement('div');
+                eclat.className = 'eclaboussure';
+                const taille = 8 + Math.random() * 16;
+                eclat.style.width = taille + 'px';
+                eclat.style.height = taille + 'px';
+                eclat.style.left = (Math.random() * 100).toFixed(1) + 'vw';
+                eclat.style.bottom = '0';
+                eclat.style.setProperty('--jx', ((Math.random() - 0.5) * 220).toFixed(0) + 'px');
+                eclat.style.setProperty('--jy', (-80 - Math.random() * 200).toFixed(0) + 'px');
+                eclat.style.animationDuration = (0.7 + Math.random() * 0.7).toFixed(2) + 's';
+                document.body.appendChild(eclat);
+                setTimeout(() => eclat.remove(), 1600);
+            }
+        }
+
+        /* Gouttes de sang sur les lettres */
+        function creerGouttesLettres() {
+            for (let i = 0; i < 9; i++) {
+                const g = document.createElement('span');
+                g.className = 'goutteLettre';
+                g.style.left = (20 + i * 7.5 + Math.random() * 3).toFixed(1) + '%';
+                g.style.animationDelay = (Math.random() * 1.2).toFixed(2) + 's';
+                texteMort.appendChild(g);
+            }
+        }
+
+        /* Le crâne dessiné à la main (SVG) */
+        const CRANE_SVG = `
+<svg viewBox="0 0 200 210" xmlns="http://www.w3.org/2000/svg">
+  <ellipse cx="100" cy="203" rx="62" ry="8" fill="rgba(0,0,0,0.28)"/>
+  <path d="M100 8
+           C48 8 20 42 20 92
+           C20 124 34 145 55 156
+           L55 186
+           C55 196 63 202 73 202
+           L127 202
+           C137 202 145 196 145 186
+           L145 156
+           C166 145 180 124 180 92
+           C180 42 152 8 100 8 Z"
+        fill="#f4f1e4" stroke="#141414" stroke-width="7"
+        stroke-linejoin="round"/>
+  <path d="M78 26 L74 48" stroke="#c9c4b0" stroke-width="5" stroke-linecap="round"/>
+  <path d="M100 22 L100 46" stroke="#c9c4b0" stroke-width="5" stroke-linecap="round"/>
+  <path d="M122 26 L126 48" stroke="#c9c4b0" stroke-width="5" stroke-linecap="round"/>
+  <ellipse cx="67" cy="96" rx="23" ry="27" fill="#141414"/>
+  <ellipse cx="133" cy="96" rx="23" ry="27" fill="#141414"/>
+  <circle cx="60" cy="88" r="6" fill="rgba(255,255,255,0.22)"/>
+  <circle cx="126" cy="88" r="6" fill="rgba(255,255,255,0.22)"/>
+  <path d="M100 122 L86 152 L114 152 Z" fill="#141414"
+        stroke="#141414" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M44 118 L56 126" stroke="#c9c4b0" stroke-width="5" stroke-linecap="round"/>
+  <path d="M156 118 L144 126" stroke="#c9c4b0" stroke-width="5" stroke-linecap="round"/>
+  <rect x="58" y="162" width="84" height="34" rx="7"
+        fill="#f4f1e4" stroke="#141414" stroke-width="6"/>
+  <line x1="72" y1="164" x2="72" y2="194" stroke="#141414" stroke-width="4.5"/>
+  <line x1="86" y1="164" x2="86" y2="194" stroke="#141414" stroke-width="4.5"/>
+  <line x1="114" y1="164" x2="114" y2="194" stroke="#141414" stroke-width="4.5"/>
+  <line x1="128" y1="164" x2="128" y2="194" stroke="#141414" stroke-width="4.5"/>
+</svg>`;
+
+        /* Séquence complète : le sang coule, le crâne tombe, puis on
+           redirige vers la page indiquée. */
+        async function sceneSaut(destination) {
+            await ATTENTE(1500);
+            remplirDeSang(3200);
+            await ATTENTE(3400);
+
+            cercleMort.classList.add('tombe');
+            await ATTENTE(900);
+
+            craneMort.innerHTML = '<span class="crane-tombant">' + CRANE_SVG + '</span>';
+            await ATTENTE(850);
+
+            creerGouttesLettres();
+            texteMort.classList.add('apparait');
+            await ATTENTE(2800);
+
+            screenTrans.classList.add('active', 'black');
+            await ATTENTE(1300);
+
+            window.location.href = destination;
+        }
+
+        /* shared.js déclenche cet evenement quand le bouton a data-scene */
+        document.addEventListener('lancer-scene', function (e) {
+            if (e.detail.nom === 'saut') sceneSaut('saut-graveyard.html');
+            if (e.detail.nom === 'crier') sceneSaut('crier-graveyard.html');
+        });
+
+        /* Les deux boutons "Sautez par la fenêtre" et "Criez à l'aide"
+           utilisent data-scene (scène de sang). "Courez dehors" utilise
+           data-dest et mène à la cinématique de course. */
+    </script>
+    <script src="../shared.js?v=2"></script>
+
+</body>
+</html>

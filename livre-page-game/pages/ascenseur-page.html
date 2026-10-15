@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>L'appartement en feu - Dans l'ascenseur</title>
+    <link rel="stylesheet" href="../shared.css">
+    <style>
+        body {
+            background: #000;
+            height: auto;
+            min-height: 100vh;
+            width: 100%;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        /* ==========================================================
+           INTÉRIEUR DE L'ASCENSEUR
+           ========================================================== */
+
+        /* Les parois métalliques */
+        .parois {
+            position: fixed;
+            inset: 0;
+            background: #a9b0bd;
+            z-index: 0;
+        }
+
+        /* Panneaux verticaux (effet tôle) */
+        .parois::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image:
+                repeating-linear-gradient(90deg,
+                    rgba(255,255,255,0.10) 0 3px,
+                    transparent 3px 90px),
+                repeating-linear-gradient(90deg,
+                    rgba(0,0,0,0.10) 0 2px,
+                    transparent 2px 90px);
+            background-position: 0 0, 45px 0;
+        }
+
+        /* Le plafond */
+        .plafond {
+            position: fixed;
+            left: 0;
+            right: 0;
+            top: 0;
+            height: 90px;
+            background: #8d949f;
+            border-bottom: 5px solid #6f7681;
+            z-index: 1;
+        }
+
+        /* La lampe du plafond (qui vacille) */
+        .plafond .lampe {
+            position: absolute;
+            left: 50%;
+            bottom: 10px;
+            transform: translateX(-50%);
+            width: 340px;
+            height: 34px;
+            background: #fffbe6;
+            border: 5px solid #b8b39a;
+            border-radius: 20px;
+            box-shadow: 0 0 40px rgba(255, 250, 200, 0.75);
+            animation: vacille 3.4s ease-in-out infinite;
+        }
+
+        @keyframes vacille {
+            0%, 92%, 100% { opacity: 1; }
+            94%   { opacity: 0.25; }
+            96%   { opacity: 1; }
+            97%   { opacity: 0.35; }
+            99%   { opacity: 1; }
+        }
+
+        /* Le sol de l'ascenseur */
+        .solAscenseur {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 240px;
+            background: #6f7681;
+            border-top: 5px solid #565c66;
+            z-index: 1;
+        }
+
+        .solAscenseur::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image:
+                repeating-linear-gradient(0deg,
+                    rgba(0,0,0,0.12) 0 3px,
+                    transparent 3px 70px);
+        }
+
+        /* La main courante */
+        .mainCourante {
+            position: fixed;
+            left: 4%;
+            right: 4%;
+            top: 300px;
+            height: 22px;
+            background: linear-gradient(180deg, #e8ecf2 0%, #aab1bd 60%, #7f8794 100%);
+            border-radius: 11px;
+            z-index: 2;
+            box-shadow: 0 6px 14px rgba(0,0,0,0.35);
+        }
+
+        /* Le panneau de boutons */
+        .panneau {
+            position: fixed;
+            right: 7%;
+            top: 300px;
+            width: 130px;
+            padding: 22px 14px;
+            background: #c3c9d4;
+            border: 6px solid #8a919e;
+            border-radius: 12px;
+            z-index: 3;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 18px;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.12);
+        }
+
+        .pastille {
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            border: 5px solid #6f7681;
+            background: #e8ecf2;
+        }
+
+        /* La pastille allumée (étage actuel) */
+        .pastille.allumee {
+            background: #ff2b2b;
+            box-shadow: 0 0 20px rgba(255, 43, 43, 0.85);
+        }
+
+        /* L'afficheur d'étage */
+        .afficheur {
+            position: fixed;
+            left: 50%;
+            top: 120px;
+            transform: translateX(-50%);
+            padding: 10px 34px;
+            background: #1c1f24;
+            border: 6px solid #6f7681;
+            border-radius: 12px;
+            font-family: 'Bangers', cursive;
+            font-size: 54px;
+            letter-spacing: 8px;
+            color: #ff9f1c;
+            text-shadow: 0 0 18px rgba(255, 159, 28, 0.9);
+            z-index: 4;
+        }
+
+        /* L'ombre dans le couloir derrière la porte */
+        .ombres {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 240px;
+            height: 300px;
+            background: linear-gradient(to top, rgba(0,0,0,0.42), transparent);
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* ==========================================================
+           TITRE + BOÎTES + BOUTONS
+           ========================================================== */
+
+        .site-header {
+            position: relative;
+            z-index: 5;
+            text-align: center;
+            padding: 18px 10px 6px;
+            font-size: 46px;
+            color: #ffffff;
+            letter-spacing: 3px;
+            text-shadow: 3px 3px 0 #2f3540, 6px 6px 0 rgba(0,0,0,0.4);
+        }
+
+        .content-container {
+            position: relative;
+            z-index: 5;
+            display: flex;
+            justify-content: center;
+            align-items: stretch;
+            gap: 26px;
+            padding: 18px 26px 6px;
+        }
+
+        .story-box {
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 22px;
+            padding: 28px;
+            min-height: 380px;
+            flex: 1;
+            max-width: 640px;
+        }
+
+        .image-placeholder {
+            width: 100%;
+            height: 100%;
+            min-height: 324px;
+            background: rgba(255,255,255,0.08);
+            border: 4px dashed rgba(255,255,255,0.55);
+            border-radius: 16px;
+            display: flex;
+            align-items: stretch;
+            justify-content: stretch;
+            overflow: hidden;
+            padding: 0;
+            color: rgba(255,255,255,0.75);
+            font-size: 24px;
+            text-align: center;
+        }
+
+        .image-placeholder img {
+            width: 100%;
+            height: 100%;
+            min-height: 324px;
+            border-radius: 12px;
+            object-fit: cover;
+            object-position: center;
+            display: block;
+        }
+
+        .right-box-content {
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .right-box-content h2 {
+            font-size: 34px;
+            margin: 0;
+            color: #FFD700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
+            border-bottom: 3px solid rgba(255,255,255,0.25);
+            padding-bottom: 10px;
+        }
+
+        .right-box-content p {
+            font-family: 'Comic Neue', 'Comic Sans MS', cursive;
+            font-size: 21px;
+            line-height: 1.7;
+            margin: 0;
+        }
+
+        /* Les 3 boutons verts */
+        .choices-container {
+            position: relative;
+            z-index: 5;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            padding: 30px 20px 80px;
+        }
+
+        .choice-btn {
+            position: relative;
+            overflow: visible;
+            background: #1faa3a;
+            color: #ffffff;
+            font-family: 'Bangers', cursive;
+            font-size: 25px;
+            letter-spacing: 2px;
+            padding: 17px 34px;
+            border: 4px solid #0d6b22;
+            border-radius: 16px;
+            cursor: pointer;
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.45);
+            box-shadow: 0 6px 0 #0a4f19;
+        }
+
+        .choice-btn:hover {
+            background: #2ecb52;
+            transform: translateY(-3px) scale(1.03);
+            box-shadow: 0 9px 0 #0a4f19,
+                        0 0 14px rgba(255, 40, 40, 0.75),
+                        0 0 34px rgba(255, 0, 0, 0.45);
+        }
+
+        @media (max-width: 900px) {
+            .content-container { flex-direction: column; align-items: center; }
+            .story-box { max-width: 640px; width: 100%; min-height: auto; }
+            .site-header { font-size: 30px; }
+            .panneau { display: none; }
+        }
+
+        /* ===== ANIMATION DE MORT (inline, pas de shared) ===== */
+        #sangMasse { position:fixed; top:0; left:0; width:100%; height:0; background:#b3121b; z-index:200; pointer-events:none; opacity:0; transition:height .7s cubic-bezier(.4,0,.6,1), opacity .3s; }
+        #bordSang { position:fixed; top:0; left:0; width:100%; height:300px; margin-top:-276px; z-index:201; pointer-events:none; opacity:0; }
+        #bordSang svg { width:100%; height:100%; display:block; overflow:visible; }
+        .bulle { position:fixed; border-radius:50%; background:rgba(255,120,120,.45); border:3px solid rgba(90,10,16,.45); z-index:202; pointer-events:none; animation:remonteBulle linear forwards; }
+        @keyframes remonteBulle { 0%{transform:translateY(0) scale(.4);opacity:0} 20%{opacity:.9} 100%{transform:translateY(-260px) scale(1.15);opacity:0} }
+        .eclaboussure { position:fixed; border-radius:50%; background:#c8171f; z-index:203; pointer-events:none; animation:sautEclaboussure ease-out forwards; }
+        @keyframes sautEclaboussure { 0%{transform:translate(0,0) scale(1);opacity:1} 100%{transform:translate(var(--jx),var(--jy)) scale(.2);opacity:0} }
+        #cercleMort { position:fixed; left:50%; top:50%; width:220px; height:220px; transform:translate(-50%,-50%); background:rgba(0,0,0,.55); border:6px solid rgba(255,255,255,.22); border-radius:50%; z-index:210; opacity:0; display:flex; align-items:center; justify-content:center; pointer-events:none; }
+        #cercleMort .contenu { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; }
+        #cercleMort.tombe { opacity:1; animation:chuteCercle .85s cubic-bezier(.45,0,.7,.55) forwards; }
+        @keyframes chuteCercle { 0%{transform:translate(-50%,-50%) translateY(-120vh)} 74%{transform:translate(-50%,-50%) translateY(10px)} 88%{transform:translate(-50%,-50%) translateY(-6px)} 100%{transform:translate(-50%,-50%) translateY(0)} }
+        #craneMort { width:200px; height:200px; flex:0 0 auto; display:flex; align-items:center; justify-content:center; }
+        #craneMort svg { width:200px; height:200px; display:block; }
+        #craneMort .crane-tombant { display:block; line-height:0; animation:chuteCrane .8s cubic-bezier(.42,0,.68,.5) forwards; }
+        @keyframes chuteCrane { 0%{transform:translateY(-150vh) rotate(-170deg) scale(.65);opacity:0} 14%{opacity:1} 72%{transform:translateY(12px) rotate(7deg) scale(1.12,.86)} 87%{transform:translateY(-7px) rotate(-4deg) scale(.94,1.07)} 100%{transform:translateY(0) rotate(0deg) scale(1);opacity:1} }
+        #texteMort { position:fixed; left:0; right:0; top:calc(50%+145px); z-index:211; text-align:center; font-family:'Bangers',cursive; font-size:clamp(30px,6vw,68px); letter-spacing:5px; color:#fff; text-shadow:4px 4px 0 #5a0008; opacity:0; pointer-events:none; }
+        #texteMort.apparait { animation:fonduTexte 1.5s ease forwards; }
+        @keyframes fonduTexte { 0%{opacity:0;transform:translateY(20px)} 100%{opacity:1;transform:translateY(0)} }
+        #fonduMort { position:fixed; inset:0; background:#000; z-index:300; opacity:0; pointer-events:none; transition:opacity .9s ease; }
+        #fonduMort.noir { opacity:1; }
+    </style>
+</head>
+<body>
+
+    <!-- Intérieur de l'ascenseur -->
+    <div class="parois"></div>
+    <div class="solAscenseur"></div>
+    <div class="ombres"></div>
+    <div class="mainCourante"></div>
+    <div class="plafond"><div class="lampe"></div></div>
+
+    <!-- Afficheur d'étage -->
+    <div class="afficheur">8</div>
+
+    <!-- Panneau de boutons -->
+    <div class="panneau">
+        <div class="pastille allumee"></div>
+        <div class="pastille"></div>
+        <div class="pastille"></div>
+        <div class="pastille"></div>
+    </div>
+
+    <!-- Titre du jeu -->
+    <header class="site-header">L'appartement en feu</header>
+
+    <!-- Les deux boîtes noires transparentes -->
+    <main class="content-container">
+
+        <!-- Boîte gauche : emplacement image -->
+        <section class="story-box">
+            <div class="image-placeholder">
+                <img src="../images/istockphoto-1384339181-612x612.jpg" alt="Ascenseur en feu">
+            </div>
+        </section>
+
+        <!-- Boîte droite : titre + scénario -->
+        <section class="story-box">
+            <div class="right-box-content">
+                <h2>Appartement en feu</h2>
+                <p>Vous êtes caché dans l'ascenseur et vous ne savez plus quoi faire.</p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Les 3 boutons verts -->
+    <nav class="choices-container">
+        <button class="choice-btn burn-btn" data-dest="choice2-graveyard.html" data-couleur="blue" data-scene="mort-sang">Ne rien faire<span class="scorch"></span></button>
+        <button class="choice-btn burn-btn" data-scene="mort" data-couleur="blue">Cliquer le bouton pour aller au premier étage<span class="scorch"></span></button>
+        <button class="choice-btn burn-btn" data-dest="porte-ascenseur-graveyard.html" data-couleur="blue" data-scene="mort-sang">Rouvrir la porte de l'ascenseur<span class="scorch"></span></button>
+    </nav>
+
+    <div class="screen-transition" id="screenTransition"></div>
+
+    <!-- Éléments animation mort -->
+    <div id="sangMasse"></div>
+    <div id="bordSang"></div>
+    <div id="cercleMort"><div class="contenu"><span id="craneMort"></span></div></div>
+    <div id="texteMort">VOUS ÊTES MORT</div>
+    <div id="fonduMort"></div>
+
+    <script src="../shared.js?v=2"></script>
+    <script>
+        // Crâne SVG
+        document.getElementById('craneMort').innerHTML = `
+            <svg viewBox="0 0 100 100" fill="none">
+                <path d="M50 15 C30 15 15 30 15 50 C15 68 25 82 38 90 C42 92 46 92 50 90 C62 82 72 68 72 50 C72 30 57 15 50 15 Z" stroke="#fff" stroke-width="3"/>
+                <ellipse cx="35" cy="42" rx="8" ry="10" fill="#fff"/>
+                <ellipse cx="65" cy="42" rx="8" ry="10" fill="#fff"/>
+                <path d="M35 62 Q50 72 65 62" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round"/>
+            </svg>
+        `;
+
+        // Handler mort direct sur chaque bouton
+        document.querySelectorAll('.burn-btn').forEach(btn => {
+            btn.onclick = function(e) {
+                e.preventDefault();
+                if (window.transitionEnCours) return;
+                window.transitionEnCours = true;
+
+                const dest = this.getAttribute('data-dest');
+                if (!dest) return;
+
+                // Bloquer tous les boutons
+                document.querySelectorAll('.burn-btn, button, a').forEach(el => {
+                    el.style.pointerEvents = 'none';
+                    el.style.cursor = 'default';
+                });
+                this.classList.add('burning');
+                this.disabled = true;
+
+                // Étincelles (copié de shared.js)
+                const rect = this.getBoundingClientRect();
+                for (let i = 0; i < 30; i++) {
+                    const b = document.createElement('span');
+                    b.className = 'ember';
+                    b.style.left = (rect.left + Math.random() * rect.width) + 'px';
+                    b.style.top = (rect.top + Math.random() * rect.height) + 'px';
+                    b.style.width = b.style.height = (3 + Math.random() * 6).toFixed(1) + 'px';
+                    b.style.setProperty('--dx', ((Math.random() - 0.5) * 50).toFixed(0) + 'px');
+                    b.style.setProperty('--dy', (-35 - Math.random() * 75).toFixed(0) + 'px');
+                    b.style.setProperty('--duree', (0.6 + Math.random() * 0.7).toFixed(2) + 's');
+                    b.style.animationDelay = (Math.random() * 1.15).toFixed(2) + 's';
+                    document.body.appendChild(b);
+                }
+                for (let i = 0; i < 14; i++) {
+                    const f = document.createElement('span');
+                    f.className = 'spark';
+                    f.textContent = ['🔥','🔥','🔥','💥'][i % 4];
+                    f.style.left = (rect.left + Math.random() * rect.width) + 'px';
+                    f.style.top = (rect.top + Math.random() * rect.height) + 'px';
+                    f.style.fontSize = (14 + Math.random() * 14).toFixed(0) + 'px';
+                    f.style.setProperty('--duree', (0.5 + Math.random() * 0.5).toFixed(2) + 's');
+                    f.style.animationDelay = (Math.random() * 1.15).toFixed(2) + 's';
+                    document.body.appendChild(f);
+                }
+                setTimeout(() => document.querySelectorAll('.ember,.spark').forEach(n => n.remove()), 2400);
+
+                // === ANIMATION MORT ===
+                const sangMasse = document.getElementById('sangMasse');
+                const bordSang = document.getElementById('bordSang');
+                const cercleMort = document.getElementById('cercleMort');
+                const texteMort = document.getElementById('texteMort');
+                const fonduMort = document.getElementById('fonduMort');
+
+                // 1. Sang qui monte
+                sangMasse.style.height = '100%';
+                sangMasse.style.opacity = '1';
+
+                // 2. Bordure
+                bordSang.style.opacity = '1';
+                bordSang.innerHTML = `<svg viewBox="0 0 1600 300" preserveAspectRatio="none"><path d="M0,300 Q400,0 800,300 T1600,300" fill="#8b0000" opacity=".9"/><path d="M0,300 Q400,100 800,280 T1600,300" fill="#b3121b" opacity=".7"/></svg>`;
+
+                // 3. Bulles
+                for (let i = 0; i < 18; i++) {
+                    setTimeout(() => {
+                        const b = document.createElement('div');
+                        b.className = 'bulle';
+                        const t = 10 + Math.random() * 22;
+                        b.style.width = b.style.height = t + 'px';
+                        b.style.left = (10 + Math.random() * 80) + '%';
+                        b.style.bottom = '0px';
+                        b.style.animationDuration = (1 + Math.random() * 1.2) + 's';
+                        document.body.appendChild(b);
+                        setTimeout(() => b.remove(), 2500);
+                    }, i * 60);
+                }
+
+                // 4. Éclaboussures
+                for (let i = 0; i < 14; i++) {
+                    setTimeout(() => {
+                        const e = document.createElement('div');
+                        e.className = 'eclaboussure';
+                        const t = 6 + Math.random() * 18;
+                        e.style.width = e.style.height = t + 'px';
+                        e.style.left = (20 + Math.random() * 60) + '%';
+                        e.style.top = (30 + Math.random() * 40) + '%';
+                        e.style.setProperty('--jx', (Math.random() - 0.5) * 300 + 'px');
+                        e.style.setProperty('--jy', -100 - Math.random() * 200 + 'px');
+                        document.body.appendChild(e);
+                        setTimeout(() => e.remove(), 1200);
+                    }, i * 50);
+                }
+
+                // 5. Cercle + crâne
+                setTimeout(() => cercleMort.classList.add('tombe'), 500);
+
+                // 6. Texte
+                setTimeout(() => texteMort.classList.add('apparait'), 1200);
+
+                // 7. Fondu + redirect
+                setTimeout(() => {
+                    fonduMort.classList.add('noir');
+                    setTimeout(() => window.location.href = dest, 900);
+                }, 2800);
+            };
+        });
+        /* ---------- Scène de mort lorsqu'on clique sur le bouton avec data-scene="mort" ---------- */
+        document.addEventListener('lancer-scene', function (e) {
+            if (e.detail.nom !== 'mort') return;
+            
+            // 1. Sang qui monte
+            const sangMasse  = document.getElementById('sangMasse');
+            const bordSang   = document.getElementById('bordSang');
+            const cercleMort = document.getElementById('cercleMort');
+            const texteMort  = document.getElementById('texteMort');
+            const fonduMort  = document.getElementById('fonduMort');
+            
+            // Animation du sang
+            sangMasse.style.transition = 'height 0.7s cubic-bezier(0.4,0,0.6,1), opacity 0.3s';
+            sangMasse.style.height = '100%';
+            sangMasse.style.opacity = '1';
+            
+            // Bordure sanglante
+            bordSang.style.transition = 'opacity 0.3s';
+            bordSang.style.opacity = '1';
+            bordSang.innerHTML = `<svg viewBox="0 0 1600 300" preserveAspectRatio="none"><path d="M0,300 Q400,0 800,300 T1600,300" fill="#8b0000" opacity=".9"/><path d="M0,300 Q400,100 800,280 T1600,300" fill="#b3121b" opacity=".7"/></svg>`;
+            
+            // Bulles
+            for (let i = 0; i < 18; i++) {
+                setTimeout(() => {
+                    const b = document.createElement('div');
+                    b.className = 'bulle';
+                    const t = 10 + Math.random() * 22;
+                    b.style.width = b.style.height = t + 'px';
+                    b.style.left = (10 + Math.random() * 80) + '%';
+                    b.style.bottom = '0px';
+                    b.style.animationDuration = (1 + Math.random() * 1.2) + 's';
+                    document.body.appendChild(b);
+                    setTimeout(() => b.remove(), 2500);
+                }, i * 60);
+            }
+            
+            // Éclaboussures
+            for (let i = 0; i < 14; i++) {
+                setTimeout(() => {
+                    const e = document.createElement('div');
+                    e.className = 'eclaboussure';
+                    const t = 6 + Math.random() * 18;
+                    e.style.width = e.style.height = t + 'px';
+                    e.style.left = (20 + Math.random() * 60) + '%';
+                    e.style.top = (30 + Math.random() * 40) + '%';
+                    e.style.setProperty('--jx', (Math.random() - 0.5) * 300 + 'px');
+                    e.style.setProperty('--jy', -100 - Math.random() * 200 + 'px');
+                    document.body.appendChild(e);
+                    setTimeout(() => e.remove(), 1200);
+                }, i * 50);
+            }
+            
+            // Cercle + crâne
+            setTimeout(() => cercleMort.classList.add('tombe'), 500);
+            
+            // Texte
+            setTimeout(() => texteMort.classList.add('apparait'), 1200);
+            
+            // Fondu + redirect vers la page de mort
+            setTimeout(() => {
+                fonduMort.classList.add('noir');
+                setTimeout(() => {
+                    window.location.href = 'elevateur-graveyard.html';
+                }, 900);
+            }, 2800);
+        });
+    </script>
+</body>
+</html>

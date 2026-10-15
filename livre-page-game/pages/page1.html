@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>L'appartement en feu - Page 1</title>
+    <link rel="stylesheet" href="../shared.css">
+    <style>
+        body {
+            background: #87CEEB;
+            height: auto;
+            min-height: 100vh;
+            width: 100%;
+            overflow-x: hidden;
+            overflow-y: visible;
+        }
+
+        /* ---------- En-tête ---------- */
+        .site-header {
+            position: relative;
+            z-index: 5;
+            text-align: center;
+            padding: 18px 10px 6px;
+            font-size: 42px;
+            color: #ffffff;
+            letter-spacing: 3px;
+            text-shadow: 3px 3px 0 #1a237e, 6px 6px 0 rgba(0,0,0,0.25);
+        }
+
+        /* ---------- Les deux grandes boîtes ---------- */
+        .content-container {
+            position: relative;
+            z-index: 5;
+            display: flex;
+            justify-content: center;
+            align-items: stretch;
+            gap: 26px;
+            padding: 18px 26px 6px;
+        }
+
+        .story-box {
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 22px;
+            padding: 28px;
+            min-height: 380px;
+            flex: 1;
+            max-width: 640px;
+        }
+
+        .image-placeholder {
+            width: 100%;
+            height: 100%;
+            min-height: 324px;
+            background: rgba(255,255,255,0.08);
+            border: 4px dashed rgba(255,255,255,0.55);
+            border-radius: 16px;
+            display: flex;
+            align-items: stretch;
+            justify-content: stretch;
+            overflow: hidden;
+            padding: 0;
+        }
+
+        .image-placeholder img {
+            width: 100%;
+            height: 100%;
+            min-height: 324px;
+            border-radius: 12px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .right-box-content {
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .right-box-content h2 {
+            font-size: 34px;
+            margin: 0;
+            color: #FFD700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
+            border-bottom: 3px solid rgba(255,255,255,0.25);
+            padding-bottom: 10px;
+        }
+
+        .right-box-content p {
+            font-family: 'Comic Neue', 'Comic Sans MS', cursive;
+            font-size: 21px;
+            line-height: 1.7;
+            margin: 0;
+        }
+
+        /* ---------- Les 3 boutons de choix ---------- */
+        .choices-container {
+            position: relative;
+            z-index: 5;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 18px;
+            padding: 26px 20px 60px;
+        }
+
+        .choice-btn {
+            background: #1a237e;
+            color: #ffffff;
+            font-family: 'Bangers', cursive;
+            font-size: 26px;
+            letter-spacing: 2px;
+            padding: 16px 34px;
+            border: 4px solid #0d1754;
+            border-radius: 16px;
+            cursor: pointer;
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.45);
+            box-shadow: 0 6px 0 #0a0f3d;
+        }
+
+        .choice-btn:hover {
+            background: #283593;
+            transform: translateY(-3px) scale(1.03);
+            box-shadow: 0 9px 0 #0a0f3d,
+                        0 0 14px rgba(255, 40, 40, 0.75),
+                        0 0 34px rgba(255, 0, 0, 0.45);
+        }
+
+        @media (max-width: 900px) {
+            .content-container { flex-direction: column; align-items: center; }
+            .story-box { max-width: 640px; width: 100%; min-height: auto; }
+            .site-header { font-size: 30px; }
+        }
+
+        /* ==========================================================
+           SCÈNE "MORT" : le sang coule SUR cette page
+           ========================================================== */
+
+        /* ---------- La masse de sang qui TOMBE du haut ----------
+           Le sang est une seule masse pleine depuis le haut.
+           Son bord du bas est irrégulier, avec des gouttes de
+           longueurs différentes (comme dessinées à la main). */
+        #sangMasse {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 0;
+            background: #b3121b;
+            z-index: 20;
+            pointer-events: none;
+            opacity: 0;
+        }
+
+        /* Le bord du bas + les gouttes, dessinés en SVG path.
+           On le déplace avec la masse pour qu'il reste toujours
+           collé au front du sang. */
+        #bordSang {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 300px;
+            margin-top: -276px;              /* 24px du path dépassent sous le front */
+            z-index: 21;
+            pointer-events: none;
+            opacity: 0;
+        }
+
+        #bordSang svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+            overflow: visible;
+        }
+
+        /* Bulles qui remontent dans le sang (cartoone) */
+        .bulle {
+            position: fixed;
+            border-radius: 50%;
+            background: rgba(255, 120, 120, 0.45);
+            border: 3px solid rgba(90, 10, 16, 0.45);
+            z-index: 22;
+            pointer-events: none;
+            animation: remonteBulle linear forwards;
+        }
+
+        @keyframes remonteBulle {
+            0%   { transform: translateY(0) scale(0.4); opacity: 0; }
+            20%  { opacity: 0.9; }
+            100% { transform: translateY(-260px) scale(1.15); opacity: 0; }
+        }
+
+        /* Éclaboussures qui jaillissent quand la vague touche le bas */
+        .eclaboussure {
+            position: fixed;
+            border-radius: 50%;
+            background: #c8171f;
+            z-index: 23;
+            pointer-events: none;
+            animation: sautEclaboussure ease-out forwards;
+        }
+
+        /* Bulles qui remontent dans le sang (cartoone) */
+        .bulle {
+            position: fixed;
+            border-radius: 50%;
+            background: rgba(255, 120, 120, 0.5);
+            border: 3px solid rgba(90, 10, 16, 0.5);
+            z-index: 22;
+            pointer-events: none;
+            animation: remonteBulle linear forwards;
+        }
+
+        @keyframes remonteBulle {
+            0%   { transform: translateY(0) scale(0.4); opacity: 0; }
+            20%  { opacity: 0.9; }
+            100% { transform: translateY(-260px) scale(1.15); opacity: 0; }
+        }
+
+        /* Éclaboussures qui jaillissent quand la vague touche le bas */
+        .eclaboussure {
+            position: fixed;
+            border-radius: 50%;
+            background: #c8171f;
+            z-index: 23;
+            pointer-events: none;
+            animation: sautEclaboussure ease-out forwards;
+        }
+
+        @keyframes sautEclaboussure {
+            0%   { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(var(--jx), var(--jy)) scale(0.2); opacity: 0; }
+        }
+
+        
+
+        /* Cercle noir transparent (perfectement circulaire) */
+        #cercleMort {
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            width: 220px;
+            height: 220px;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.55);
+            border: 6px solid rgba(255, 255, 255, 0.22);
+            border-radius: 50%;
+            z-index: 30;
+            opacity: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            pointer-events: none;
+        }
+
+        /* Le crâne est simplement centré dans le cercle (flexbox) */
+        #cercleMort .contenu {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: visible;
+        }
+
+        #cercleMort.tombe {
+            opacity: 1;
+            animation: chuteCercle 0.85s cubic-bezier(0.45, 0, 0.7, 0.55) forwards;
+        }
+
+        @keyframes chuteCercle {
+            0%   { transform: translate(-50%, -50%) translateY(-120vh); }
+            74%  { transform: translate(-50%, -50%) translateY(10px); }
+            88%  { transform: translate(-50%, -50%) translateY(-6px); }
+            100% { transform: translate(-50%, -50%) translateY(0); }
+        }
+
+        /* Le crâne : dessiné en SVG, centré par flexbox */
+        #craneMort {
+            width: 200px;
+            height: 200px;
+            flex: 0 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #craneMort svg {
+            width: 200px;
+            height: 200px;
+            display: block;
+        }
+
+        /* Chute du crâne, alignée exactement avec le cercle */
+        #craneMort .crane-tombant {
+            display: block;
+            line-height: 0;
+            animation: chuteCrane 0.8s cubic-bezier(0.42, 0, 0.68, 0.5) forwards;
+        }
+
+        @keyframes chuteCrane {
+            0%   { transform: translateY(-150vh) rotate(-170deg) scale(0.65); opacity: 0; }
+            14%  { opacity: 1; }
+            72%  { transform: translateY(12px) rotate(7deg) scale(1.12, 0.86); }
+            87%  { transform: translateY(-7px) rotate(-4deg) scale(0.94, 1.07); }
+            100% { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+        }
+
+        /* Texte sous le cercle */
+        #texteMort {
+            position: fixed;
+            left: 0;
+            right: 0;
+            top: calc(50% + 145px);
+            z-index: 31;
+            text-align: center;
+            font-family: 'Bangers', cursive;
+            font-size: clamp(30px, 6vw, 68px);
+            letter-spacing: 5px;
+            color: #ffffff;
+            text-shadow: 4px 4px 0 #5a0008;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #texteMort.apparait { animation: fonduTexte 1.5s ease forwards; }
+
+        @keyframes fonduTexte {
+            0%   { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Gouttes de sang qui descendent des lettres (effet mouillé) */
+        .goutteLettre {
+            position: absolute;
+            top: 100%;
+            width: 9px;
+            height: 15px;
+            background: #b3121b;
+            border-radius: 50% 50% 60% 60%;
+            animation: goutteTombe 1.6s ease-in forwards;
+        }
+
+        @keyframes goutteTombe {
+            0%   { opacity: 0; transform: translateY(-12px) scaleY(0.6); }
+            30%  { opacity: 1; transform: translateY(0) scaleY(1); }
+            100% { opacity: 0; transform: translateY(50px) scaleY(1.6); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Ciel calme : nuages, avions et oiseaux -->
+    <div id="skyContainer"></div>
+
+    <!-- Titre du site -->
+    <header class="site-header">L'appartement en feu</header>
+
+    <!-- Les deux grandes boîtes noires transparentes -->
+    <main class="content-container">
+
+        <!-- Boîte gauche : image -->
+        <section class="story-box">
+            <div class="image-placeholder">
+                <img src="../images/cuisiniere.jpeg" alt="Cuisinière à gaz">
+            </div>
+        </section>
+
+        <!-- Boîte droite : titre + scénario -->
+        <section class="story-box">
+            <div class="right-box-content">
+                <h2>Appartement en feu</h2>
+                <p>Vous vivez au dernier étage d'un appartement de 8 étages. Vous avez faim, mais vous n'avez pas d'argent pour acheter quelque chose à l'extérieur. En revanche, dans votre réfrigérateur, vous avez des ingrédients pour préparer à manger, mais vous ne savez pas cuisiner. Qu'allez-vous faire&nbsp;?</p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Les 3 boutons de choix -->
+    <nav class="choices-container">
+        <button class="choice-btn burn-btn" data-dest="cutscene-cooking.html" data-couleur="orange">Essaie de cuisiner<span class="scorch"></span></button>
+        <button class="choice-btn burn-btn" data-scene="mort">Ne pas essayer de cuisiner<span class="scorch"></span></button>
+        <button class="choice-btn burn-btn" data-dest="cutscene-job.html" data-couleur="orange">Aller dehors pour trouver un travail<span class="scorch"></span></button>
+    </nav>
+
+    <!-- Scène "mort" : sang qui coule sur cette page -->
+    <div id="sangMasse"></div>
+    <div id="bordSang"></div>
+
+    <div id="cercleMort">
+        <div class="contenu">
+            <span id="craneMort"></span>
+        </div>
+    </div>
+
+    <div id="texteMort">VOUS ETES MORT</div>
+
+    <!-- Transition d'écran -->
+    <div class="screen-transition" id="screenTransition"></div>
+
+    <script>
+        /* ============ NUAGES ============ */
+        function creerNuages() {
+            const ciel = document.getElementById('skyContainer');
+            const tailles = [
+                { l: 220, h: 70 }, { l: 160, h: 55 }, { l: 300, h: 95 },
+                { l: 140, h: 48 }, { l: 260, h: 80 }
+            ];
+            tailles.forEach((t, i) => {
+                const nuage = document.createElement('div');
+                nuage.className = 'cloud';
+                nuage.style.width = t.l + 'px';
+                nuage.style.height = t.h + 'px';
+                nuage.style.top = (5 + i * 11) + '%';
+                nuage.style.animationDuration = (48 + i * 14) + 's';
+                nuage.style.animationDelay = (-i * 16) + 's';
+                if (i % 2 === 0) nuage.style.opacity = '0.9';
+                ciel.appendChild(nuage);
+            });
+        }
+
+        /* ============ OISEAUX (loin, donc petits) ============ */
+        function creerOiseaux() {
+            const ciel = document.getElementById('skyContainer');
+            for (let i = 0; i < 3; i++) {
+                const oiseau = document.createElement('div');
+                oiseau.className = 'bird';
+                oiseau.innerHTML =
+                    '<svg viewBox="0 0 40 16" width="34" height="14">' +
+                    '<path class="bird-wing-left"  d="M20 10 Q11 1 1 5"  fill="none" stroke="#2f3b52" stroke-width="3.4" stroke-linecap="round"/>' +
+                    '<path class="bird-wing-right" d="M20 10 Q29 1 39 5"  fill="none" stroke="#2f3b52" stroke-width="3.4" stroke-linecap="round"/>' +
+                    '</svg>';
+                oiseau.style.top = (14 + i * 13) + '%';
+                oiseau.style.left = '0';
+                oiseau.style.opacity = '0.75';
+                oiseau.style.transform = 'scale(' + (0.55 + i * 0.18) + ')';
+                oiseau.style.animationDuration = (55 + i * 16) + 's';
+                oiseau.style.animationDelay = (-i * 22) + 's';
+                ciel.appendChild(oiseau);
+            }
+        }
+
+        /* ============ AVIONS (loin, donc petits) ============ */
+        function creerAvions() {
+            const ciel = document.getElementById('skyContainer');
+            for (let i = 0; i < 2; i++) {
+                const avion = document.createElement('div');
+                avion.className = 'plane';
+                avion.innerHTML =
+                    '<svg viewBox="0 0 60 26" width="52" height="22">' +
+                    '<ellipse cx="28" cy="14" rx="24" ry="6" fill="#f4f7ff" stroke="#2f3b52" stroke-width="2"/>' +
+                    '<path d="M26 13 L8 3 L18 14 Z" fill="#e14b3c" stroke="#2f3b52" stroke-width="1.6"/>' +
+                    '<path d="M46 12 L56 3 L57 12 Z" fill="#e14b3c" stroke="#2f3b52" stroke-width="1.6"/>' +
+                    '<circle cx="49" cy="14" r="4.5" fill="#ffd23f" stroke="#2f3b52" stroke-width="1.6"/>' +
+                    '<circle cx="16" cy="14" r="2" fill="#2f3b52"/>' +
+                    '</svg>';
+                avion.style.top = (5 + i * 9) + '%';
+                avion.style.left = '0';
+                avion.style.opacity = '0.7';
+                avion.style.transform = 'scale(' + (0.6 + i * 0.3) + ')';
+                avion.style.animationDuration = (75 + i * 25) + 's';
+                avion.style.animationDelay = (-i * 40) + 's';
+                ciel.appendChild(avion);
+            }
+        }
+
+        window.addEventListener('load', function () {
+            creerNuages();
+            creerOiseaux();
+            creerAvions();
+        });
+
+        /* ==========================================================
+           SCÈNE "MORT" jouée directement sur cette page
+           ========================================================== */
+        const masse        = document.getElementById('sangMasse');
+        const bordSang    = document.getElementById('bordSang');
+        const cercleMort   = document.getElementById('cercleMort');
+        const craneMort    = document.getElementById('craneMort');
+        const texteMort    = document.getElementById('texteMort');
+        const screenTrans  = document.getElementById('screenTransition');
+
+        const ATTENTE = ms => new Promise(r => setTimeout(r, ms));
+
+        /* ---------- Le bord du sang, dessiné en SVG ----------
+           Un chemin qui part du haut à gauche, descend en vague,
+           avec des gouttes de longueurs différentes, et remonte à droite. */
+        function construireBordSang() {
+            const L = 1000;   // largeur du viewBox
+            const H = 300;    // hauteur du viewBox
+            const base = 12;  // ligne de base (le reste du path pend dessous)
+
+            let d = `M 0 0 L ${L} 0 L ${L} ${base}`;
+
+            // On remonte de droite à gauche en dessinant les gouttes
+            let x = L;
+            const gouttes = 13;
+            for (let i = 0; i < gouttes; i++) {
+                const largeur = L / gouttes;
+                const x1 = x;
+                const x2 = x - largeur;
+                const profondeur = 26 + Math.random() * 150;   // longueurs variées
+                const milieu = (x1 + x2) / 2;
+                const cx = milieu + (Math.random() * 26 - 13);
+
+                // une "goutte" = courbe qui descend puis remonte
+                d += ` Q ${cx} ${base + profondeur * 2.2} ${x2} ${base + (profondeur * 0.18)}`;
+                x = x2;
+            }
+            d += ` L 0 ${base} Z`;
+
+            bordSang.innerHTML =
+                `<svg viewBox="0 0 ${L} ${H}" preserveAspectRatio="none">
+                    <path d="${d}" fill="#b3121b"/>
+                 </svg>`;
+        }
+
+        /* ---------- Le sang descend du haut et remplit l'écran ---------- */
+        function remplirDeSang(dureeMs) {
+            construireBordSang();
+
+            masse.style.opacity = '1';
+            bordSang.style.opacity = '1';
+
+            const debut = performance.now();
+            let bullesLancees = 0;
+
+            function animer(now) {
+                const t = Math.min(1, (now - debut) / dureeMs);
+                // coule vite au début puis ralentit un peu
+                const p = 1 - Math.pow(1 - t, 2);
+                const niveau = p * 100;
+
+                masse.style.height = niveau + 'vh';
+                // le bord suit exactement le front du sang
+                bordSang.style.top = niveau + 'vh';
+
+                // Bulles qui remontent dans le sang
+                if (niveau > 10 && bullesLancees < 30) {
+                    bullesLancees++;
+                    creerBulle(niveau);
+                }
+
+                // Éclaboussures quand ça touche le bas
+                if (t > 0.97) creerEclaboussures();
+
+                if (t < 1) requestAnimationFrame(animer);
+            }
+
+            requestAnimationFrame(animer);
+        }
+
+        /* Bulles cartoones qui remontent dans le sang */
+        function creerBulle(niveauVh) {
+            const bulle = document.createElement('div');
+            bulle.className = 'bulle';
+            const taille = 8 + Math.random() * 20;
+            bulle.style.width = taille + 'px';
+            bulle.style.height = taille + 'px';
+            bulle.style.left = (Math.random() * 100).toFixed(1) + 'vw';
+            bulle.style.top = (Math.random() * niveauVh * 0.92).toFixed(1) + 'vh';
+            bulle.style.animationDuration = (1.4 + Math.random() * 1.6).toFixed(2) + 's';
+            document.body.appendChild(bulle);
+            setTimeout(() => bulle.remove(), 3200);
+        }
+
+        /* Éclaboussures quand la vague arrive en bas */
+        function creerEclaboussures() {
+            for (let i = 0; i < 12; i++) {
+                const eclat = document.createElement('div');
+                eclat.className = 'eclaboussure';
+                const taille = 8 + Math.random() * 16;
+                eclat.style.width = taille + 'px';
+                eclat.style.height = taille + 'px';
+                eclat.style.left = (Math.random() * 100).toFixed(1) + 'vw';
+                eclat.style.bottom = '0';
+                eclat.style.setProperty('--jx', ((Math.random() - 0.5) * 220).toFixed(0) + 'px');
+                eclat.style.setProperty('--jy', (-80 - Math.random() * 200).toFixed(0) + 'px');
+                eclat.style.animationDuration = (0.7 + Math.random() * 0.7).toFixed(2) + 's';
+                document.body.appendChild(eclat);
+                setTimeout(() => eclat.remove(), 1600);
+            }
+        }
+
+        /* Gouttes de sang qui tombent des lettres (effet mouillé) */
+        function creerGouttesLettres() {
+            for (let i = 0; i < 9; i++) {
+                const g = document.createElement('span');
+                g.className = 'goutteLettre';
+                g.style.left = (20 + i * 7.5 + Math.random() * 3).toFixed(1) + '%';
+                g.style.animationDelay = (Math.random() * 1.2).toFixed(2) + 's';
+                texteMort.appendChild(g);
+            }
+        }
+
+        /* Le crâne dessiné à la main (SVG) : calque crânien, orbites,
+           nez en triangle, mâchoire et dents. */
+        const CRANE_SVG = `
+<svg viewBox="0 0 200 210" xmlns="http://www.w3.org/2000/svg">
+  <!-- ombre portée du crâne -->
+  <ellipse cx="100" cy="203" rx="62" ry="8" fill="rgba(0,0,0,0.28)"/>
+
+  <!-- crâne -->
+  <path d="M100 8
+           C48 8 20 42 20 92
+           C20 124 34 145 55 156
+           L55 186
+           C55 196 63 202 73 202
+           L127 202
+           C137 202 145 196 145 186
+           L145 156
+           C166 145 180 124 180 92
+           C180 42 152 8 100 8 Z"
+        fill="#f4f1e4" stroke="#141414" stroke-width="7"
+        stroke-linejoin="round"/>
+
+  <!-- osTemporal : petites marques sur le front -->
+  <path d="M78 26 L74 48" stroke="#c9c4b0" stroke-width="5" stroke-linecap="round"/>
+  <path d="M100 22 L100 46" stroke="#c9c4b0" stroke-width="5" stroke-linecap="round"/>
+  <path d="M122 26 L126 48" stroke="#c9c4b0" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- orbites -->
+  <ellipse cx="67" cy="96" rx="23" ry="27" fill="#141414"/>
+  <ellipse cx="133" cy="96" rx="23" ry="27" fill="#141414"/>
+
+  <!-- petits reflets dans les orbites -->
+  <circle cx="60" cy="88" r="6" fill="rgba(255,255,255,0.22)"/>
+  <circle cx="126" cy="88" r="6" fill="rgba(255,255,255,0.22)"/>
+
+  <!-- nez -->
+  <path d="M100 122 L86 152 L114 152 Z" fill="#141414"
+        stroke="#141414" stroke-width="4" stroke-linejoin="round"/>
+
+  <!-- pommettes -->
+  <path d="M44 118 L56 126" stroke="#c9c4b0" stroke-width="5" stroke-linecap="round"/>
+  <path d="M156 118 L144 126" stroke="#c9c4b0" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- mâchoire + dents -->
+  <rect x="58" y="162" width="84" height="34" rx="7"
+        fill="#f4f1e4" stroke="#141414" stroke-width="6"/>
+  <line x1="72" y1="164" x2="72" y2="194" stroke="#141414" stroke-width="4.5"/>
+  <line x1="86" y1="164" x2="86" y2="194" stroke="#141414" stroke-width="4.5"/>
+  <line x1="114" y1="164" x2="114" y2="194" stroke="#141414" stroke-width="4.5"/>
+  <line x1="128" y1="164" x2="128" y2="194" stroke="#141414" stroke-width="4.5"/>
+</svg>`;
+
+        /* Séquence complète */
+        async function sceneMort() {
+            // 1) Le bouton brûle déjà pendant ~1.3s : on attend qu'il finisse
+            await ATTENTE(1500);
+
+            // 2) Le sang commence à couler du haut et remplit l'écran (~3.2s)
+            remplirDeSang(3200);
+            await ATTENTE(3400);
+
+            // 3) Le cercle transparent noir tombe au centre
+            cercleMort.classList.add('tombe');
+            await ATTENTE(900);
+
+            // 4) Le crâne (SVG) tombe du même endroit et atterrit dans le cercle
+            craneMort.innerHTML = '<span class="crane-tombant">' + CRANE_SVG + '</span>';
+            await ATTENTE(850);
+
+            // 5) Le texte apparait lentement avec l'effet mouille
+            creerGouttesLettres();
+            texteMort.classList.add('apparait');
+            await ATTENTE(2800);
+
+            // 6) Fondu au noir
+            screenTrans.classList.add('active', 'black');
+            await ATTENTE(1300);
+
+            // 7) Redirection vers le cimetiere
+            window.location.href = 'choice2-graveyard.html';
+        }
+
+        /* shared.js déclenche cet evenement quand data-scene="mort" */
+        document.addEventListener('lancer-scene', function (e) {
+            if (e.detail.nom === 'mort') sceneMort();
+        });
+
+        /* Les effets de brûlure + verrouillage des boutons sont gérés par shared.js */
+    </script>
+    <script src="../shared.js?v=2"></script>
+
+</body>
+</html>
